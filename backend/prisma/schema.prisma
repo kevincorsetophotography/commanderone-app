@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int      @id @default(autoincrement())
+  username         String   @unique
+  password         String   // bcrypt hash
+  avatarCardName   String?
+  avatarScryfallId String?  // UUID stampa Scryfall specifica scelta dall'utente
+  createdAt        DateTime @default(now())
+  memberships        GroupMember[]
+  decks              Deck[]
+  gamePlayers         GamePlayer[]
+  createdGames        Game[]      @relation("GameCreator")
+  comments            Comment[]
+  reactions           Reaction[]
+  createdEvents       Event[]     @relation("EventCreator")
+  eventRsvps          EventRsvp[]
+  eventSeats          EventSeat[]
+  notifications       Notification[] @relation("NotifRecipient")
+  sentNotifications   Notification[] @relation("NotifSender")
+  achievementUnlocks  AchievementUnlock[]
+  judgeQuestions      JudgeQuestion[]
+}
+
+// Un gruppo di gioco indipendente (playgroup). Ogni Deck/Game/Event/JudgeQuestion
+// appartiene a un Group; l'isolamento tra gruppi passa sempre da qui.
+model Group {
+  id         Int      @id @default(autoincrement())
+  name       String
+  slug       String   @unique
+  inviteCode String   @unique
+  createdAt  DateTime @default(now())
+  members            GroupMember[]
+  decks              Deck[]
+  games              Game[]
+  events             Event[]
+  judgeQuestions     JudgeQuestion[]
+  notifications      Notification[]
+  achievementUnlocks AchievementUnlock[]
+}
+
+// Ruolo (PLAYER|ADMIN) scoped al singolo gruppo: un utente può essere ADMIN
+// nel proprio gruppo e semplice PLAYER in un altro a cui si è unito.
+model GroupMember {
+  id       Int      @id @default(autoincrement())
+  role     String   @default("PLAYER")
+  joinedAt DateTime @default(now())
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId  Int
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   Int
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+model Deck {
+  id          Int          @id @default(autoincrement())
+  name        String
+  commander   String?
+  colors      String?      // es. "WUBRG"
+  decklist    String?
+  bracket     Int?         // 1=Casual, 2=Bilanciato, 3=Potente, 4=cEDH
+  archetype   String?      // es. Aggro, Control, Combo, Midrange, Stax...
+  createdAt   DateTime     @default(now())
+  group       Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId     Int
+  user        User         @relation(fields: [userId], references: [id])
+  userId      Int
+  gamePlayers GamePlayer[]
+
+  @@unique([groupId, userId, name])
+  @@index([groupId])
+}
+
+model Game {
+  id              Int          @id @default(autoincrement())
+  playedAt        DateTime     @default(now())
+  notes           String?
+  group           Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId         Int
+  createdByUserId Int?
+  createdBy       User?        @relation("GameCreator", fields: [createdByUserId], references: [id])
+  players         GamePlayer[]
+  comments        Comment[]
+  reactions       Reaction[]
+  eventTable      EventTable?
+
+  @@index([groupId])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  body      String
+  createdAt DateTime @default(now())
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+
+  @@index([gameId])
+}
+
+model Reaction {
+  id        Int      @id @default(autoincrement())
+  emoji     String
+  createdAt DateTime @default(now())
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+
+  @@unique([gameId, userId, emoji])
+  @@index([gameId])
+}
+
+model Event {
+  id              Int         @id @default(autoincrement())
+  title           String
+  description     String?
+  startsAt        DateTime
+  allDay          Boolean     @default(false)
+  location        String?
+  format          String?     // 'multiplayer' (pod Commander) | '1v1'
+  bestOf          Int?        // 1 o 3, solo per 1v1
+  createdAt       DateTime    @default(now())
+  group           Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId         Int
+  createdBy       User?       @relation("EventCreator", fields: [createdByUserId], references: [id])
+  createdByUserId Int?
+  rsvps           EventRsvp[]
+  rounds          EventRound[]
+
+  @@index([groupId])
+  @@index([startsAt])
+}
+
+// Un turno del torneo dentro un evento (pod multiplayer o pairing 1v1).
+model EventRound {
+  id        Int          @id @default(autoincrement())
+  number    Int
+  createdAt DateTime     @default(now())
+  event     Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   Int
+  tables    EventTable[]
+
+  @@unique([eventId, number])
+}
+
+// Un tavolo: pod (3-5 posti) per multiplayer, pairing (2 posti) per 1v1.
+model EventTable {
+  id           Int         @id @default(autoincrement())
+  number       Int
+  done         Boolean     @default(false)
+  // multiplayer: la partita registrata (conta nelle statistiche)
+  gameId       Int?        @unique
+  game         Game?       @relation(fields: [gameId], references: [id], onDelete: SetNull)
+  // 1v1: punteggio e esito (winnerUserId null + isDraw => pareggio; entrambi null => in attesa)
+  winnerUserId Int?
+  isDraw       Boolean     @default(false)
+  scoreA       Int?        // game vinti dal posto 0
+  scoreB       Int?        // game vinti dal posto 1
+  round        EventRound  @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  roundId      Int
+  seats        EventSeat[]
+
+  @@index([roundId])
+}
+
+// Un posto al tavolo = un iscritto. seat = posizione (0..n; per 1v1 0 e 1).
+model EventSeat {
+  id      Int        @id @default(autoincrement())
+  seat    Int
+  table   EventTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tableId Int
+  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  Int
+
+  @@unique([tableId, userId])
+  @@index([tableId])
+}
+
+model EventRsvp {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+}
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  type       String   // event | achievement | comment | reaction
+  title      String
+  body       String?
+  link       String?
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  group      Group?   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId    Int?
+  user       User     @relation("NotifRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+  fromUser   User?    @relation("NotifSender", fields: [fromUserId], references: [id], onDelete: SetNull)
+  fromUserId Int?
+
+  @@index([userId, read])
+}
+
+// Snapshot degli achievement già sbloccati, per notificare solo i nuovi.
+// Scoped per gruppo: progressi/sblocchi indipendenti tra i gruppi di uno stesso utente.
+model AchievementUnlock {
+  id            Int      @id @default(autoincrement())
+  achievementId String
+  createdAt     DateTime @default(now())
+  group         Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId       Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        Int
+
+  @@unique([groupId, userId, achievementId])
+}
+
+model JudgeQuestion {
+  id          Int      @id @default(autoincrement())
+  question    String
+  answer      String
+  explanation String?
+  confidence  Float
+  sourcesJson String   // JSON array di { type, id, text }
+  rulesUsed   String   // JSON array di rule IDs
+  createdAt   DateTime @default(now())
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId     Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      Int
+
+  @@index([groupId])
+}
+
+model GamePlayer {
+  id             Int     @id @default(autoincrement())
+  isWinner       Boolean @default(false)
+  placement      Int?    // 1 = vincitore (ultimo in piedi), N = primo eliminato
+  eliminatedById Int?    // userId di chi ha eliminato questo giocatore (null = sconosciuto)
+  game           Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameId   Int
+  user     User    @relation(fields: [userId], references: [id])
+  userId   Int
+  deck     Deck    @relation(fields: [deckId], references: [id])
+  deckId   Int
+
+  @@index([userId])
+}

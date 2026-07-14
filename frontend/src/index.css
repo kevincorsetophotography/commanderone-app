@@ -1,0 +1,176 @@
+* {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Evita lo scroll orizzontale SENZA rompere quello verticale.
+   `overflow-x: hidden` su <html> (e body) forza `overflow-y` a `auto`,
+   trasformando l'elemento in un contenitore di scroll: su Android Chrome,
+   con header sticky + dock fixed + dvh, questo blocca lo scroll della pagina.
+   `overflow-x: clip` clippa l'orizzontale ma lascia `overflow-y: visible`,
+   quindi a scrollare resta il viewport. */
+body {
+  overflow-x: clip;
+}
+
+/* Sfondo aurora: blob sfocati che si muovono lentamente */
+.ct-aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ct-aurora::before,
+.ct-aurora::after {
+  content: '';
+  position: absolute;
+  width: 55vw;
+  height: 55vw;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.45;
+  will-change: transform;
+}
+.ct-aurora.dark::before {
+  background: radial-gradient(circle, #38BDF8 0%, transparent 70%);
+  top: -15%;
+  left: -10%;
+  animation: ct-float-1 22s ease-in-out infinite;
+}
+.ct-aurora.dark::after {
+  background: radial-gradient(circle, #FBBF24 0%, transparent 70%);
+  bottom: -20%;
+  right: -10%;
+  animation: ct-float-2 26s ease-in-out infinite;
+}
+.ct-aurora.light::before {
+  background: radial-gradient(circle, #2563EB 0%, transparent 70%);
+  top: -20%;
+  left: -10%;
+  opacity: 0.14;
+  animation: ct-float-1 24s ease-in-out infinite;
+}
+.ct-aurora.light::after {
+  background: radial-gradient(circle, #F59E0B 0%, transparent 70%);
+  bottom: -25%;
+  right: -10%;
+  opacity: 0.12;
+  animation: ct-float-2 28s ease-in-out infinite;
+}
+
+@keyframes ct-float-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(8vw, 6vh) scale(1.12); }
+}
+@keyframes ct-float-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-7vw, -5vh) scale(1.08); }
+}
+
+/* Entrata morbida delle card */
+@keyframes ct-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ct-fade-up { animation: ct-fade-up 0.35s ease both; }
+
+/* Wordmark con gradiente (background-clip robusto in CSS puro) */
+.ct-wordmark {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1.1;
+}
+.ct-wordmark.dark  { background-image: linear-gradient(135deg, #38BDF8, #FBBF24); }
+.ct-wordmark.light { background-image: linear-gradient(135deg, #2563EB, #F59E0B); }
+
+/* Lift al passaggio del mouse / tap su mobile */
+.ct-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.ct-lift:hover  { transform: translateY(-3px); }
+.ct-lift:active { transform: scale(0.97); transition-duration: 0.08s; }
+
+/* Feedback pressione per pulsanti senza ct-lift */
+.ct-press { transition: transform 0.1s ease, opacity 0.1s ease; }
+.ct-press:active { transform: scale(0.96); opacity: 0.85; }
+
+/* Striscia scrollabile orizzontale (schede su mobile) senza scrollbar visibile */
+.ct-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.ct-scroll-x::-webkit-scrollbar { display: none; }
+
+/* Skeleton shimmer */
+.ct-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(130,140,190,0.15);
+  border-radius: 8px;
+}
+.ct-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(200,210,255,0.30) 50%, transparent 100%);
+  animation: ct-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes ct-shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(130,140,190,0.30);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(130,140,190,0.50); background-clip: content-box; }
+
+/* Riempimento barra win rate */
+@keyframes ct-bar-fill {
+  from { transform: scaleX(0); }
+}
+.ct-bar-fill {
+  transform-origin: left center;
+  animation: ct-bar-fill 0.5s ease both;
+}
+
+/* Apertura sezione collassabile */
+@keyframes ct-section-open {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ct-section-open { animation: ct-section-open 0.25s ease both; }
+
+/* Entrata modal (scala + fade) */
+@keyframes ct-modal-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.ct-modal-in { animation: ct-modal-in 0.22s cubic-bezier(0.34,1.2,0.64,1) both; }
+
+/* Riduce motion per chi lo preferisce */
+@media (prefers-reduced-motion: reduce) {
+  .ct-aurora::before, .ct-aurora::after,
+  .ct-fade-up, .ct-bar-fill, .ct-section-open, .ct-modal-in { animation: none; }
+  .ct-lift:active, .ct-press:active { transform: none; }
+}
