@@ -46,6 +46,15 @@ const authLimiter = rateLimit({
   message: { error: 'Troppi tentativi, riprova tra qualche minuto.' },
 });
 
+// Limite stretto sugli endpoint che inviano email (anti-abuso del provider)
+const emailLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Troppe richieste email, riprova tra un\'ora.' },
+});
+
 // Limite generale sulle API autenticate (anti-scraping, anti-flood)
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -74,6 +83,8 @@ app.use(cors({
 app.use(express.json());
 
 // Route "di conto": autenticazione e gestione gruppi (creazione/adesione), senza slug.
+app.use('/api/auth/forgot-password',     emailLimiter);
+app.use('/api/auth/resend-verification', emailLimiter);
 app.use('/api/auth',   authLimiter, authRoutes);
 app.use('/api/groups', apiLimiter, groupsRoutes);
 

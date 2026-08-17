@@ -5,14 +5,30 @@ import { useAuth } from './useAuth';
 const GroupContext = createContext(null);
 
 export function GroupProvider({ children }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   // null = non ancora caricato, [] = caricato ma zero gruppi
   const [groups, setGroups] = useState(null);
   const [activeSlug, setActiveSlug] = useState(getActiveGroupSlug());
 
   const refresh = useCallback(async () => {
     if (!user) { setGroups(null); return []; }
-    const mine = await api.myGroups();
+    let mine;
+    try {
+      mine = await api.myGroups();
+    } catch (err) {
+      if (err?.status === 401) {
+        // Token invalido per questo backend (es. residuo di un'altra sessione/app
+        // sulla stessa origin, o sessione chiusa da un cambio password): non restare
+        // bloccati su "Caricamento…", si torna al login così l'utente può riautenticarsi.
+        console.error('token non valido, riporto al login', err);
+        logout();
+        return [];
+      }
+      // Errore transitorio (rete, 500, server in riavvio): non tocchiamo la sessione,
+      // si riprova al prossimo refresh invece di sloggare l'utente per un blip.
+      console.error('impossibile caricare i gruppi (riprovo più tardi)', err);
+      return [];
+    }
     setGroups(mine);
     setActiveSlug(prev => {
       const stillValid = mine.some(g => g.slug === prev);
@@ -21,7 +37,7 @@ export function GroupProvider({ children }) {
       return next;
     });
     return mine;
-  }, [user]);
+  }, [user, logout]);
 
   useEffect(() => { refresh(); }, [refresh]);
 

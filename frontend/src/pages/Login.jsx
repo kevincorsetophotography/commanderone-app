@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 
@@ -9,6 +9,7 @@ export default function Login() {
   const navigate = useNavigate()
   const [mode, setMode] = useState('login')
   const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,7 +21,7 @@ export default function Login() {
     setLoading(true)
     try {
       if (mode === 'login') await login(username, password)
-      else await register(username, password)
+      else await register(username, email, password)
       navigate('/')
     } catch (err) {
       setError(err.error || 'Errore di connessione')
@@ -87,20 +88,40 @@ export default function Login() {
           <form onSubmit={submit}>
             <div style={{ marginBottom: 12 }}>
               <input
-                type="text" placeholder="Username" value={username}
+                type="text" placeholder={mode === 'login' ? 'Username o email' : 'Username'} value={username}
                 onChange={e => setUsername(e.target.value)} required
+                autoComplete="username"
                 onFocus={() => setFocusField('user')} onBlur={() => setFocusField('')}
                 style={inputStyle('user')}
               />
             </div>
-            <div style={{ marginBottom: 18 }}>
+            {mode === 'register' && (
+              <div style={{ marginBottom: 12 }}>
+                <input
+                  type="email" placeholder="Email" value={email}
+                  onChange={e => setEmail(e.target.value)} required
+                  autoComplete="email"
+                  onFocus={() => setFocusField('email')} onBlur={() => setFocusField('')}
+                  style={inputStyle('email')}
+                />
+              </div>
+            )}
+            <div style={{ marginBottom: mode === 'login' ? 8 : 18 }}>
               <input
-                type="password" placeholder="Password" value={password}
+                type="password" placeholder={mode === 'login' ? 'Password' : 'Password (min 8 caratteri)'} value={password}
                 onChange={e => setPassword(e.target.value)} required
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 onFocus={() => setFocusField('pass')} onBlur={() => setFocusField('')}
                 style={inputStyle('pass')}
               />
             </div>
+            {mode === 'login' && (
+              <div style={{ marginBottom: 14, textAlign: 'right' }}>
+                <Link to="/reset-password" style={{ fontSize: 12, color: t.textSub, textDecoration: 'none' }}>
+                  Password dimenticata?
+                </Link>
+              </div>
+            )}
             {error && <div style={{ color: t.danger, fontSize: 13, marginBottom: 12 }}>{error}</div>}
             <button
               type="submit"

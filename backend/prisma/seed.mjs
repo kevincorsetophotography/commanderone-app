@@ -50,7 +50,8 @@ async function seedGroup(groupSpec, hash) {
 
   const players = []
   for (const [i, p] of groupSpec.players.entries()) {
-    const u = await prisma.user.create({ data: { username: p.username, password: hash, avatarCardName: p.avatar } })
+    // Email demo verificate: permettono di provare login-via-email e cambio password
+    const u = await prisma.user.create({ data: { username: p.username, email: `${p.username.toLowerCase()}@demo.local`, emailVerifiedAt: new Date(), password: hash, avatarCardName: p.avatar } })
     await prisma.groupMember.create({ data: { groupId: group.id, userId: u.id, role: i === 0 ? 'ADMIN' : 'PLAYER' } })
     const d = await prisma.deck.create({ data: { name: p.commander.split(',')[0], commander: p.commander, colors: p.colors, bracket: p.bracket, userId: u.id, groupId: group.id } })
     players.push({ user: u, deck: d })

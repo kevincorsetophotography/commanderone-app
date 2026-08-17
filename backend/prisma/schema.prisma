@@ -8,12 +8,16 @@ datasource db {
 }
 
 model User {
-  id               Int      @id @default(autoincrement())
-  username         String   @unique
-  password         String   // bcrypt hash
-  avatarCardName   String?
-  avatarScryfallId String?  // UUID stampa Scryfall specifica scelta dall'utente
-  createdAt        DateTime @default(now())
+  id                Int       @id @default(autoincrement())
+  username          String    @unique
+  password          String    // bcrypt hash
+  email             String?   @unique // nullable solo per utenti storici/seed; richiesta alla registrazione
+  emailVerifiedAt   DateTime?
+  passwordChangedAt DateTime? // i JWT emessi prima di questa data non sono più validi
+  avatarCardName    String?
+  avatarScryfallId  String?   // UUID stampa Scryfall specifica scelta dall'utente
+  createdAt         DateTime  @default(now())
+  authTokens         AuthToken[]
   memberships        GroupMember[]
   decks              Deck[]
   gamePlayers         GamePlayer[]
@@ -27,6 +31,21 @@ model User {
   sentNotifications   Notification[] @relation("NotifSender")
   achievementUnlocks  AchievementUnlock[]
   judgeQuestions      JudgeQuestion[]
+}
+
+// Token monouso per verifica email e reset password. In DB si salva solo
+// l'hash SHA-256: un dump del database non permette di usare i token.
+model AuthToken {
+  id        Int       @id @default(autoincrement())
+  tokenHash String    @unique
+  type      String    // verify_email | reset_password
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+
+  @@index([userId])
 }
 
 // Un gruppo di gioco indipendente (playgroup). Ogni Deck/Game/Event/JudgeQuestion
