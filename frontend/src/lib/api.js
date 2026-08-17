@@ -73,7 +73,8 @@ export const api = {
   importDeck:  (url)  => reqG('POST',   '/decks/import', { url }),
 
   // games
-  getGames:   ()     => reqG('GET',    '/games'),
+  getGames:       ()     => reqG('GET', '/games'), // array completo, invariato (usato per stat aggregate lato client)
+  getGamesPage:   (page, pageSize = 20) => reqG('GET', `/games?page=${page}&pageSize=${pageSize}`), // { games, total, page, pageSize, totalPages }
   getGame:    (id)   => reqG('GET',    `/games/${id}`),
   createGame: (data) => reqG('POST',   '/games', data),
   updateGame: (id, data) => reqG('PATCH', `/games/${id}`, data),
