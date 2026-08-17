@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const prisma = require('../lib/prisma');
-const { askJudge } = require('../lib/judge');
+const { askJudge, lookupOnly } = require('../lib/judge');
+const { hasLlmBudget, recordLlmUsage } = require('../lib/judgeBudget');
 const { rateLimit } = require('express-rate-limit');
 
 const judgeLimiter = rateLimit({
@@ -21,9 +22,36 @@ router.post('/', judgeLimiter, async (req, res) => {
 
   const q = question.trim().slice(0, 500);
 
+  // Tetto giornaliero globale sulle domande che usano Groq (vedi judgeBudget.js):
+  // sopra il tetto, o se Groq stesso fallisce/non è configurato, si passa al
+  // fallback gratuito invece di restituire un errore all'utente.
+  let result, llmUsed;
   try {
-    const result = await askJudge(q);
+    const budgetOk = await hasLlmBudget(prisma);
+    if (budgetOk) {
+      result = await askJudge(q);
+      llmUsed = true;
+      // Solo dopo un successo reale: se contassimo prima del tentativo, una
+      // GROQ_API_KEY assente/scaduta brucerebbe il tetto giornaliero senza
+      // aver mai davvero usato Groq, disattivando l'AI per il resto del
+      // giorno anche dopo aver sistemato la chiave.
+      await recordLlmUsage(prisma);
+    } else {
+      result = await lookupOnly(q);
+      llmUsed = false;
+    }
+  } catch (err) {
+    console.error('judge LLM error, fallback a lookupOnly:', err.message);
+    llmUsed = false;
+    try {
+      result = await lookupOnly(q);
+    } catch (fallbackErr) {
+      console.error('judge fallback error:', fallbackErr.message);
+      return res.status(500).json({ error: 'Errore durante la consulenza. Riprova tra qualche istante.' });
+    }
+  }
 
+  try {
     await prisma.judgeQuestion.create({
       data: {
         groupId:     req.group.id,
@@ -33,17 +61,14 @@ router.post('/', judgeLimiter, async (req, res) => {
         explanation: result.explanation,
         confidence:  result.confidence,
         sourcesJson: JSON.stringify(result.sources),
-        rulesUsed:   JSON.stringify(result.rulesUsed)
+        rulesUsed:   JSON.stringify(result.rulesUsed),
+        llmUsed
       }
     });
-
-    res.json(result);
+    res.json({ ...result, llmUsed });
   } catch (err) {
-    console.error('judge error:', err.message);
-    if (err.message?.includes('GROQ_API_KEY')) {
-      return res.status(503).json({ error: 'Servizio judge non configurato (GROQ_API_KEY mancante)' });
-    }
-    res.status(500).json({ error: 'Errore durante la consulenza. Riprova tra qualche istante.' });
+    console.error('judge save error:', err.message);
+    res.status(500).json({ error: 'Errore durante il salvataggio della risposta.' });
   }
 });
 
@@ -55,7 +80,7 @@ router.get('/', async (req, res) => {
       orderBy: { createdAt: 'desc' },
       take: 30,
       select: {
-        id: true, question: true, answer: true, confidence: true, createdAt: true,
+        id: true, question: true, answer: true, confidence: true, createdAt: true, llmUsed: true,
         user: { select: { username: true, avatarCardName: true, avatarScryfallId: true } }
       }
     });
