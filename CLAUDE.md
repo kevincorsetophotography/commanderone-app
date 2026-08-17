@@ -71,7 +71,7 @@ POST /api/groups/:slug/invite-code/regenerate   (admin del gruppo)
 
 ## Roadmap
 
-> Stato aggiornato al 18/08/2026. Le voci "✅ fatto" vivono su branch dedicati non ancora in `main`: `feat/email-verification-password-reset`, `feat/multi-group-switching`, `feat/new-app-icon`, `feat/judge-bot-cost-safety`.
+> Stato aggiornato al 18/08/2026. Le voci "✅ fatto" vivono su branch dedicati non ancora in `main`: `feat/email-verification-password-reset`, `feat/multi-group-switching`, `feat/new-app-icon`, `feat/judge-bot-cost-safety`, `test/http-integration-and-pagination`.
 
 ### Appena fatto (da mergiare in `main`)
 - ✅ Verifica email, reset password, cambio password self-service (`PATCH /api/auth/password`) — chiudeva la voce storica "Alta priorità".
@@ -79,13 +79,14 @@ POST /api/groups/:slug/invite-code/regenerate   (admin del gruppo)
 - ✅ Multi-gruppo: entry point in `AccountPage` per unirsi/creare un gruppo oltre al primo. Backend e switcher già lo supportavano (vedi sezione Multi-tenancy sopra), mancava solo questo pezzo di UI.
 - ✅ Icona app reale al posto del placeholder ffmpeg.
 - ✅ Judge Bot: modello Groq dismesso (`llama-3.1-8b-instant`, morto il 16/08/2026) sostituito, tetto di costo giornaliero globale (`JUDGE_DAILY_LLM_CAP`, tabella `JudgeLlmUsage`), fallback gratuito senza LLM (oracle text + ruling Scryfall + ricerca locale CR) quando il tetto è esaurito o Groq non risponde.
+- ✅ Test di integrazione HTTP (supertest + Postgres embedded dedicato, `backend/test/`) — chiudeva l'ultima voce storica in "Alta priorità". 29 test: auth, gruppi, `resolveGroup`/`requireGroupAdmin`, e soprattutto l'isolamento multi-tenant (mai testato prima). Richiesto `src/app.js` separato da `src/index.js` (che faceva `app.listen()` al top-level, impossibile da testare così com'era).
+- ✅ Paginazione opzionale `GET /api/groups/:slug/games` — retrocompatibile (senza query params ritorna l'array completo come sempre, 6 pagine su 7 del frontend calcolano statistiche client-side sull'intera lista). Con `?page&pageSize` ritorna `{ games, total, page, pageSize, totalPages }`. `api.getGamesPage()` esiste lato frontend ma **nessuna pagina lo usa ancora** — il wiring UI (infinite scroll vs "carica altre" vs pagine numerate) resta un follow-up di design.
 
 ### Prossimi (prerequisiti più che feature — bassa complessità, alto impatto, nessuno richiede Capacitor)
 - **Cancellazione account self-service** (GDPR "diritto all'oblio") — oggi non esiste, solo rimozione-da-gruppo fatta da un admin. Non rimandabile ora che l'account ha un'email reale.
 - **Privacy Policy + Termini di Servizio** — zero file nel repo oggi. Bloccante sia per la submission store sia per conformità GDPR.
 - **Donazioni** (Ko-fi/Patreon/Buy Me a Coffee) — spedibile subito, zero rischio legale (vedi vincoli sopra), primo modo per validare se la community sostiene il progetto prima di investire in ads/IAP.
-- Paginazione `GET /api/groups/:slug/games`.
-- Test di integrazione supertest sulle route HTTP — nessun test automatico copre `resolveGroup`/route dei gruppi. Con auth e multi-gruppo più complessi il perimetro di regressioni silenziose è cresciuto.
+- Wiring UI della paginazione partite (vedi sopra) — solo se/quando lo storico di un gruppo reale inizia a diventare pesante da caricare tutto insieme.
 
 ### i18n — prerequisito per "internazionale", il lavoro grosso
 Tutto è hardcoded in italiano oggi: non solo le stringhe UI ma anche i **messaggi d'errore restituiti dal backend** (`validators.js`, `mailer.js`, ...) e ~21 occorrenze di `'it-IT'` per date/numeri sparse in una dozzina di file frontend. Nessuna libreria i18n installata. Serve: (1) libreria i18n frontend (es. `react-i18next`), (2) refactor backend per restituire **codici errore** invece di stringhe italiane pronte, tradotti lato client. Va prima di ads/Capacitor, non dopo — è la porta d'ingresso per qualunque mercato non italiano.
