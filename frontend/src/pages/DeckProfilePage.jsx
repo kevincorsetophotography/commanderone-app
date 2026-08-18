@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { categorizeCard } from '../lib/scryfall'
 import { resolveDecklistCards } from '../lib/cardCache'
@@ -9,10 +10,11 @@ import { Skeleton, SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import DeckThumb from '../components/DeckThumb'
 import BracketBadge from '../components/BracketBadge'
+import { ordinal } from '../lib/ordinal'
 
 const COLOR_MAP = { W: '#f5f0e0', U: '#b8d4e8', B: '#c8b8d8', R: '#e8c0b0', G: '#b8d8b8' }
 const artUrl = (name) => `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}&format=image&version=art_crop`
-const CATEGORY_ORDER = ['Commander', 'Creature', 'Planeswalker', 'Istantanei', 'Stregonerie', 'Artefatti', 'Incantesimi', 'Terre', 'Altro']
+const CATEGORY_ORDER = ['Commander', 'Creature', 'Planeswalker', 'Instant', 'Sorcery', 'Artifact', 'Enchantment', 'Land', 'Other']
 
 function WinBar({ pct, t }) {
   return (
@@ -27,6 +29,8 @@ export default function DeckProfilePage() {
   const did = Number.parseInt(id, 10)
   const navigate = useNavigate()
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const isMobile = useIsMobile()
 
   const [games, setGames] = useState([])
@@ -45,7 +49,7 @@ export default function DeckProfilePage() {
   useEffect(() => {
     Promise.all([api.getGames(), api.statsDecks(), api.statsMatchups()])
       .then(([g, d, m]) => { setGames(g); setDeckStats(d); setMatchups(m) })
-      .catch(() => setError('Errore nel caricamento del mazzo'))
+      .catch(() => setError(tr('deckProfilePage.loadError')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -119,12 +123,12 @@ export default function DeckProfilePage() {
     border: `1px solid ${t.border}`, borderRadius: 16, padding: '1.15rem 1.35rem', marginBottom: 12, boxShadow: t.shadow,
   }
   const back = (
-    <button onClick={() => navigate(-1)} style={{ padding: '6px 14px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.bgMuted, color: t.textSub, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>← Indietro</button>
+    <button onClick={() => navigate(-1)} style={{ padding: '6px 14px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.bgMuted, color: t.textSub, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>{tr('common.back')}</button>
   )
 
   if (loading) return (<div>{back}<Skeleton h={140} r={16} style={{ marginBottom: 12 }} /><SkeletonList rows={4} /></div>)
-  if (error) return (<div>{back}<EmptyState icon="⚠️" title="Errore" message={error} /></div>)
-  if (!data.deck) return (<div>{back}<EmptyState icon="🔍" title="Mazzo non trovato" message="Questo mazzo non esiste o non ha ancora dati." /></div>)
+  if (error) return (<div>{back}<EmptyState icon="⚠️" title={tr('gruppoPage.errorTitle')} message={error} /></div>)
+  if (!data.deck) return (<div>{back}<EmptyState icon="🔍" title={tr('deckProfilePage.notFoundTitle')} message={tr('deckProfilePage.notFoundMessage')} /></div>)
 
   const { deck, myGames, trend, matchups: mine, best, worst } = data
 
@@ -161,14 +165,14 @@ export default function DeckProfilePage() {
                 <span style={{ fontWeight: 800, fontSize: 22, color: '#fff', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>{deck.name}</span>
                 <BracketBadge bracket={deck.bracket} size="lg" />
               </div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>{deck.commander || 'Nessun commander'} · di {deck.owner}</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>{deck.commander || tr('deckProfilePage.noCommander')} · {tr('deckProfilePage.byOwner', { owner: deck.owner })}</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {deck.colors && deck.colors.split('').map(c => (
                 <span key={c} style={{ width: 20, height: 20, borderRadius: '50%', background: COLOR_MAP[c] || '#eee', border: '1px solid rgba(0,0,0,0.2)' }} />
               ))}
               <span style={{ fontSize: 30, fontWeight: 900, color: deck.winRate >= 50 ? '#34F08F' : '#fff', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
-                {deck.games > 0 ? `${deck.winRate}%` : 'n/a'}
+                {deck.games > 0 ? `${deck.winRate}%` : tr('deckProfilePage.notApplicable')}
               </span>
             </div>
           </div>
@@ -177,8 +181,8 @@ export default function DeckProfilePage() {
 
       {/* Tab switcher */}
       <div style={{ display: 'inline-flex', gap: 4, marginBottom: 16, background: t.bgSurface, border: `1px solid ${t.border}`, borderRadius: 14, padding: 5, boxShadow: t.shadow }}>
-        <button style={tabBtn('perf', 'Performance')} onClick={() => setTab('perf')}>Performance</button>
-        <button style={tabBtn('lista', 'Lista carte')} onClick={() => setTab('lista')}>Lista carte</button>
+        <button style={tabBtn('perf', 'Performance')} onClick={() => setTab('perf')}>{tr('deckProfilePage.tabPerformance')}</button>
+        <button style={tabBtn('lista', 'Lista carte')} onClick={() => setTab('lista')}>{tr('deckProfilePage.tabCardList')}</button>
       </div>
 
       {/* ── TAB: PERFORMANCE ── */}
@@ -186,10 +190,10 @@ export default function DeckProfilePage() {
         <div key="perf" className="ct-fade-up">
           {/* Statistiche chiave */}
           <div style={{ ...card, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            {stat('Partite', deck.games)}
-            {stat('Vittorie', deck.wins, `${deck.games - deck.wins} sconfitte`)}
-            {stat('Miglior matchup', best ? `${best.winRate}%` : '—', best ? `vs ${best.deckB.name}` : 'nessun dato')}
-            {stat('Peggior matchup', worst ? `${worst.winRate}%` : '—', worst ? `vs ${worst.deckB.name}` : 'nessun dato')}
+            {stat(tr('deckProfilePage.statGames'), deck.games)}
+            {stat(tr('deckProfilePage.statWins'), deck.wins, tr('deckProfilePage.lossesSub', { count: deck.games - deck.wins }))}
+            {stat(tr('deckProfilePage.bestMatchup'), best ? `${best.winRate}%` : '—', best ? tr('deckProfilePage.vsOpponent', { name: best.deckB.name }) : tr('deckProfilePage.noData'))}
+            {stat(tr('deckProfilePage.worstMatchup'), worst ? `${worst.winRate}%` : '—', worst ? tr('deckProfilePage.vsOpponent', { name: worst.deckB.name }) : tr('deckProfilePage.noData'))}
           </div>
 
           {/* Stima prezzo */}
@@ -197,9 +201,9 @@ export default function DeckProfilePage() {
             <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 22 }}>💶</span>
               <div>
-                <div style={{ fontSize: 11, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, marginBottom: 2 }}>Valore stimato</div>
+                <div style={{ fontSize: 11, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, marginBottom: 2 }}>{tr('deckProfilePage.estimatedValue')}</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: t.text }}>~€ {totalEur}</div>
-                <div style={{ fontSize: 11, color: t.textMuted }}>prezzi Scryfall · carta singola</div>
+                <div style={{ fontSize: 11, color: t.textMuted }}>{tr('deckProfilePage.estimatedValuePrices')}</div>
               </div>
             </div>
           )}
@@ -207,13 +211,13 @@ export default function DeckProfilePage() {
           {/* Matchup */}
           {mine.length > 0 && (
             <>
-              <div style={{ fontSize: 15, fontWeight: 700, color: t.text, margin: '20px 0 10px' }}>Matchup</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: t.text, margin: '20px 0 10px' }}>{tr('deckProfilePage.matchupsTitle')}</div>
               {mine.map((m, i) => (
                 <div key={i} className="ct-fade-up" style={{ ...card, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 12, animationDelay: `${Math.min(i, 6) * 40}ms` }}>
                   <DeckThumb commander={commanderById[m.deckB.id]} w={48} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 500, color: t.text }}>{m.deckB.name}</div>
-                    <div style={{ fontSize: 12, color: t.textSub }}>di {m.deckB.owner} · {m.games} {m.games === 1 ? 'partita' : 'partite'}</div>
+                    <div style={{ fontSize: 12, color: t.textSub }}>{tr('deckProfilePage.byOwner', { owner: m.deckB.owner })} · {tr('deckProfilePage.matchupGamesCount', { count: m.games })}</div>
                     <WinBar pct={m.winRate} t={t} />
                   </div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: m.winRate >= 50 ? t.win : m.winRate > 0 ? t.primary : t.textMuted }}>{m.winRate}%</div>
@@ -226,9 +230,9 @@ export default function DeckProfilePage() {
           {trend.length >= 2 && (
             <div style={card}>
               <div onClick={() => setShowTrend(v => !v)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Andamento win rate</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: t.text }}>{tr('deckProfilePage.winRateTrend')}</span>
                 <span style={{ fontSize: 12, color: t.textMuted, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  {trend.length} partite
+                  {tr('deckProfilePage.trendGamesCount', { count: trend.length })}
                   <span style={{ display: 'inline-block', transition: 'transform 0.15s', transform: showTrend ? 'rotate(90deg)' : 'none' }}>▸</span>
                 </span>
               </div>
@@ -252,23 +256,23 @@ export default function DeckProfilePage() {
           )}
 
           {/* Storico */}
-          <div style={{ fontSize: 15, fontWeight: 700, color: t.text, margin: '20px 0 10px' }}>Storico partite</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: t.text, margin: '20px 0 10px' }}>{tr('deckProfilePage.historyTitle')}</div>
           {myGames.length === 0 ? (
-            <EmptyState icon="🃏" title="Nessuna partita" message="Questo mazzo non ha ancora giocato." />
+            <EmptyState icon="🃏" title={tr('deckProfilePage.noGamesTitle')} message={tr('deckProfilePage.noGamesMessage')} />
           ) : myGames.map(g => {
             const me  = g.players.find(p => p.deck.id === did)
             const won = me?.isWinner
             const winner = g.players.find(p => p.isWinner)
-            const date = new Date(g.playedAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })
+            const date = new Date(g.playedAt).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
             return (
               <div key={g.id} style={{ ...card, marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <div style={{ fontSize: 12, color: t.textMuted }}>{date} · {g.players.length} giocatori · {me?.user.username}</div>
+                  <div style={{ fontSize: 12, color: t.textMuted }}>{date} · {tr('gamePage.playersCount', { count: g.players.length })} · {me?.user.username}</div>
                   <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20, background: won ? t.winBg : t.bgMuted, color: won ? t.win : t.textSub }}>
-                    {won ? 'Vittoria' : 'Sconfitta'}{me?.placement ? ` · ${me.placement}°` : ''}
+                    {won ? tr('deckProfilePage.win') : tr('deckProfilePage.loss')}{me?.placement ? ` · ${ordinal(me.placement, locale)}` : ''}
                   </span>
                 </div>
-                {!won && winner && <div style={{ fontSize: 13, color: t.textSub }}>Ha vinto {winner.user.username} ({winner.deck.name})</div>}
+                {!won && winner && <div style={{ fontSize: 13, color: t.textSub }}>{tr('deckProfilePage.wonBy', { username: winner.user.username, deck: winner.deck.name })}</div>}
                 {g.notes && <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4, fontStyle: 'italic' }}>{g.notes}</div>}
               </div>
             )
@@ -280,9 +284,9 @@ export default function DeckProfilePage() {
       {tab === 'lista' && (
         <div key="lista" className="ct-fade-up" style={card}>
           {!deckDetail?.decklist ? (
-            <EmptyState icon="🃏" title="Nessuna decklist" message="Aggiungi una decklist dal profilo del mazzo per vederla qui." />
+            <EmptyState icon="🃏" title={tr('deckProfilePage.noDecklistTitle')} message={tr('deckProfilePage.noDecklistMessage')} />
           ) : loadingList ? (
-            <div style={{ fontSize: 13, color: t.textSub }}>Caricamento lista...</div>
+            <div style={{ fontSize: 13, color: t.textSub }}>{tr('deckProfilePage.loadingList')}</div>
           ) : (
             <>
               <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -294,7 +298,7 @@ export default function DeckProfilePage() {
                     return (
                       <div key={cat} style={{ marginBottom: 14 }}>
                         <div style={{ fontSize: 12, fontWeight: 700, color: t.primary, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
-                          {cat} <span style={{ color: t.textMuted, fontWeight: 600 }}>({tot})</span>
+                          {tr(`deckProfilePage.categories.${cat}`)} <span style={{ color: t.textMuted, fontWeight: 600 }}>({tot})</span>
                         </div>
                         {cards.map((c, i) => {
                           const active = selectedCard?.name === c.name
@@ -316,7 +320,7 @@ export default function DeckProfilePage() {
                       <img src={selectedCard.imageUri} alt={selectedCard.name} style={{ width: 240, borderRadius: 14, display: 'block', boxShadow: '0 8px 30px rgba(0,0,0,0.4)' }} />
                     ) : (
                       <div style={{ width: 240, height: 335, borderRadius: 14, border: `2px dashed ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: t.textMuted, fontSize: 12, padding: 12 }}>
-                        Passa su una carta per vederne l'immagine
+                        {tr('deckProfilePage.hoverToPreview')}
                       </div>
                     )}
                   </div>
@@ -324,7 +328,7 @@ export default function DeckProfilePage() {
               </div>
               {totalEur && (
                 <div style={{ marginTop: 16, paddingTop: 12, borderTop: `0.5px solid ${t.border}`, fontSize: 13, color: t.textSub }}>
-                  Valore stimato: <strong style={{ color: t.text }}>~€ {totalEur}</strong> <span style={{ fontSize: 11 }}>(Scryfall)</span>
+                  {tr('deckProfilePage.estimatedValue')}: <strong style={{ color: t.text }}>~€ {totalEur}</strong> <span style={{ fontSize: 11 }}>(Scryfall)</span>
                 </div>
               )}
             </>

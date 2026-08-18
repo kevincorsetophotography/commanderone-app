@@ -122,17 +122,21 @@ function toCardEntry(card, countByName) {
   }
 }
 
-// Categoria in italiano dal type_line di Scryfall
+// Categoria dal type_line di Scryfall. Ritorna una chiave interna stabile
+// (inglese) — la traduzione della label visibile è responsabilità di chi la
+// mostra (vedi deckProfilePage.categories in locales/*.json), non di questa
+// funzione: prima ritornava direttamente stringhe già in italiano, stesso
+// problema strutturale di lib/brackets.js e lib/seasons.js.
 export function categorizeCard(typeLine) {
   const t = typeLine || ''
   if (/Creature/i.test(t))     return 'Creature'
   if (/Planeswalker/i.test(t)) return 'Planeswalker'
-  if (/Instant/i.test(t))      return 'Istantanei'
-  if (/Sorcery/i.test(t))      return 'Stregonerie'
-  if (/Artifact/i.test(t))     return 'Artefatti'
-  if (/Enchantment/i.test(t))  return 'Incantesimi'
-  if (/Land/i.test(t))         return 'Terre'
-  return 'Altro'
+  if (/Instant/i.test(t))      return 'Instant'
+  if (/Sorcery/i.test(t))      return 'Sorcery'
+  if (/Artifact/i.test(t))     return 'Artifact'
+  if (/Enchantment/i.test(t))  return 'Enchantment'
+  if (/Land/i.test(t))         return 'Land'
+  return 'Other'
 }
 
 // Carte della lista con tipo e immagine (per il profilo mazzo)
