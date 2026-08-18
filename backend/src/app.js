@@ -74,7 +74,6 @@ const apiLimiter = rateLimit({
   limit: 300,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  skip: skipInTest,
   message: { error: 'Troppo traffico, rallenta un po\'.' },
   skip: skipInTest,
 });
