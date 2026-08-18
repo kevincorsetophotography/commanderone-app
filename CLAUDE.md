@@ -26,7 +26,7 @@ Il progetto dipende strutturalmente da dati di Wizards of the Coast (tramite l'A
 - `cd backend && npm run dev` → `scripts/dev.mjs`: Postgres embedded su **:5433**, `db push`, seed se vuoto, poi nodemon su **:3001**.
   - Seed (`prisma/seed.mjs`): crea **2 gruppi demo indipendenti** ("Demo Playgroup A" 6 giocatori/34 partite, "Demo Playgroup B" 4 giocatori/20 partite) per verificare a occhio l'isolamento multi-tenant. Password di tutti gli utenti: `test`. Invite code stampati a console a ogni seed (cambiano a ogni riavvio con DB vuoto).
 - Frontend: `cd frontend && npx vite --host` (:5173) → `http://localhost:3001/api`.
-- `.env` backend (gitignored): `DATABASE_URL`, `JWT_SECRET` (≥32 char), `PORT`, `FRONTEND_URL`, `GROQ_API_KEY` (Judge Bot). **Non serve più `INVITE_CODE`** (era globale, ora ogni gruppo ha il proprio codice in DB) né `ADMIN_USERNAME`/`ADMIN_PASSWORD`.
+- `.env` backend (gitignored): `DATABASE_URL`, `JWT_SECRET` (≥32 char), `PORT`, `FRONTEND_URL`, `GROQ_API_KEY` (Judge Bot, opzionale — senza, fallback gratuito senza LLM), `JUDGE_DAILY_LLM_CAP` (tetto giornaliero domande AI, default 300), `RESEND_API_KEY`/`MAIL_FROM` (email transazionali, opzionali in locale — senza, le email si stampano in console). **Non serve più `INVITE_CODE`** (era globale, ora ogni gruppo ha il proprio codice in DB) né `ADMIN_USERNAME`/`ADMIN_PASSWORD`.
 
 ---
 
@@ -34,18 +34,26 @@ Il progetto dipende strutturalmente da dati di Wizards of the Coast (tramite l'A
 
 - **`Group`**: entità first-class. `slug` (unique, usato nell'URL API), `inviteCode` (unique, rigenerabile). Ogni `Deck`, `Game`, `Event`, `JudgeQuestion`, `AchievementUnlock` ha `groupId`.
 - **`GroupMember`**: join table User↔Group con `role` (PLAYER|ADMIN) **scoped al gruppo**, non più globale. `User` non ha più un campo `role` — un utente può essere ADMIN nel proprio gruppo e PLAYER in un altro.
-- **`User.username` resta univoco globalmente** (un account, molti gruppi, login sempre per username). Email ora richiesta alla registrazione (verifica + reset password self-service) — vedi branch `feat/email-verification-password-reset`, non ancora in `main`.
+- **`User.username` resta univoco globalmente** (un account, molti gruppi, login sempre per username). Email richiesta alla registrazione: verifica indirizzo, reset e cambio password sono tutti self-service (`lib/authTokens.js`, `lib/mailer.js`). Cancellazione account self-service (`lib/accountDeletion.js`) — vedi sotto.
 - **Route mounting**: `/api/auth/*` (account, senza gruppo) e `/api/groups` (crea/unisciti/mine) sono globali; tutto il resto vive sotto `/api/groups/:slug/*`, con middleware `resolveGroup` (verifica membership, 403 se non membro, attacca `req.group`/`req.membership`) seguito da `requireGroupAdmin` dove serve.
 - **Achievement per-gruppo**: `AchievementUnlock` ha `@@unique([groupId, userId, achievementId])` — un giocatore in due gruppi ha progressi indipendenti in ciascuno. `loadData(prisma, groupId)` in `achievements.js` filtra sempre per gruppo.
 - **Frontend**: `hooks/useGroup.jsx` (context) gestisce la lista gruppi dell'utente, il gruppo attivo (persistito in `localStorage` come `ct_active_group`) e lo switcher. `lib/api.js` prefissa automaticamente le chiamate group-scoped con `/groups/${activeGroupSlug}`. `App.jsx` mostra `OnboardingPage` (crea/unisciti) se l'utente ha zero gruppi.
 - **Onboarding**: `POST /api/auth/register` crea solo l'account (nessun invite code). Il gruppo si crea (`POST /api/groups`, il creatore diventa ADMIN) o si raggiunge (`POST /api/groups/join {inviteCode}`) in un secondo momento.
+- **Cancellazione account** (`lib/accountDeletion.js`): non un semplice `DELETE FROM User` — lo storico partite è condiviso con altri giocatori. Righe puramente personali (membership, commenti, reazioni, notifiche, achievement) cascatano via schema; mazzi/partecipazioni/eventi usati in partite condivise vengono riassegnati a un utente "fantasma" (`[utente eliminato]`) condiviso da tutte le cancellazioni, così lo storico degli altri giocatori resta intatto. Bloccata solo se sei l'unico admin di un gruppo con altri membri.
 
 ## API backend — endpoint principali
 
 ```
-POST /api/auth/register        {username, password}
-POST /api/auth/login           {username, password}
-PATCH /api/auth/profile        (avatar)
+POST   /api/auth/register            {username, email, password}
+POST   /api/auth/login               {username (o email), password}
+GET    /api/auth/me                  profilo esteso (per la pagina Account)
+POST   /api/auth/verify-email        {token}
+POST   /api/auth/resend-verification (autenticato)
+POST   /api/auth/forgot-password     {email} — risposta sempre uguale, no user enumeration
+POST   /api/auth/reset-password      {token, newPassword}
+PATCH  /api/auth/password            {currentPassword, newPassword} (autenticato)
+PATCH  /api/auth/profile             (avatar)
+DELETE /api/auth/account             {password} — cancellazione self-service, vedi sopra
 
 POST /api/groups               {name} → crea gruppo, creatore = ADMIN
 POST /api/groups/join          {inviteCode}
@@ -53,7 +61,9 @@ GET  /api/groups/mine
 POST /api/groups/:slug/invite-code/regenerate   (admin del gruppo)
 
 # tutto il resto sotto /api/groups/:slug/... (richiede membership)
-/decks, /games (+ commenti/reazioni), /stats, /events (+ tornei), /notifications, /judge
+/decks, /games (+ commenti/reazioni; GET supporta ?page&pageSize opzionali), /stats,
+/events (+ tornei), /notifications, /judge (risponde con llmUsed:false in fallback
+gratuito se il tetto giornaliero è esaurito o Groq non risponde)
 /admin/export, /admin/members (GET/PATCH ruolo/DELETE rimuovi — gestione membri, NON più creazione utenti/cambio password: quello è self-service)
 
 /api/scryfall/art     (globale, non autenticato — proxy immagini Scryfall)
@@ -63,26 +73,23 @@ POST /api/groups/:slug/invite-code/regenerate   (admin del gruppo)
 
 - Niente più admin globale hardcoded (`ensureAdmin.js` rimosso) — l'ADMIN è per-gruppo.
 - `decks.js`/`gamesV2.js`/`stats.js`/`events.js`/`admin.js`: ogni query ora filtra per `groupId`. `AdminPage.jsx` gestisce membri del gruppo (ruolo, rimozione, codice invito), non più CRUD utenti globale con password.
-- Brand: nome **CommanderOne**, palette blu/ambra (`theme.js`). Icona app reale (monogramma "C1" neon, coerente col wordmark CSS) sostituisce il placeholder ffmpeg — vedi branch `feat/new-app-icon`, non ancora in `main`.
-- `GUIDA_UTENTE.md` riscritta da zero, generica (nessuno screenshot ancora — quelli di Commanderone erano specifici di Villastellone).
+- Brand: nome **CommanderOne**, palette blu/ambra (`theme.js`). Icona app reale (monogramma "C1" neon, coerente col wordmark CSS) al posto del placeholder ffmpeg.
+- `GUIDA_UTENTE.md` riscritta da zero, generica (nessuno screenshot ancora — quelli di Commanderone erano specifici di Villastellone). Stesso trattamento per `PRIVACY_POLICY.md`/`TERMINI_SERVIZIO.md` (vedi Roadmap: titolare/contatto/hosting/legge applicabile restano segnaposto da completare prima della pubblicazione).
 - Logica pura invariata 1:1: `seasons.js`, `achievements.js` (frontend), `tournament.js`, `judge.js` — ricevono dati già scoped per gruppo dal backend, nessuna modifica strutturale necessaria.
 
 ---
 
 ## Roadmap
 
-> Stato aggiornato al 18/08/2026. Le voci "✅ fatto" vivono su branch dedicati non ancora in `main`: `feat/email-verification-password-reset`, `feat/multi-group-switching`, `feat/new-app-icon`, `feat/judge-bot-cost-safety`, `test/http-integration-and-pagination`, `feat/account-deletion` (stacked sull'auth + sul branch dei test: serviva sia `AccountPage.jsx` sia l'infrastruttura supertest), `docs/privacy-terms` (da `main`, indipendente dal resto).
+> Stato aggiornato al 18/08/2026. Tutto il lavoro sotto è in `main`.
 
-### Appena fatto (da mergiare in `main`)
-- ✅ Verifica email, reset password, cambio password self-service (`PATCH /api/auth/password`) — chiudeva la voce storica "Alta priorità".
-- ✅ Validazione username (regex in `lib/validators.js`) — chiudeva l'altra voce storica.
-- ✅ Multi-gruppo: entry point in `AccountPage` per unirsi/creare un gruppo oltre al primo. Backend e switcher già lo supportavano (vedi sezione Multi-tenancy sopra), mancava solo questo pezzo di UI.
-- ✅ Icona app reale al posto del placeholder ffmpeg.
-- ✅ Judge Bot: modello Groq dismesso (`llama-3.1-8b-instant`, morto il 16/08/2026) sostituito, tetto di costo giornaliero globale (`JUDGE_DAILY_LLM_CAP`, tabella `JudgeLlmUsage`), fallback gratuito senza LLM (oracle text + ruling Scryfall + ricerca locale CR) quando il tetto è esaurito o Groq non risponde.
-- ✅ Test di integrazione HTTP (supertest + Postgres embedded dedicato, `backend/test/`) — chiudeva l'ultima voce storica in "Alta priorità". 29 test: auth, gruppi, `resolveGroup`/`requireGroupAdmin`, e soprattutto l'isolamento multi-tenant (mai testato prima). Richiesto `src/app.js` separato da `src/index.js` (che faceva `app.listen()` al top-level, impossibile da testare così com'era).
-- ✅ Paginazione opzionale `GET /api/groups/:slug/games` — retrocompatibile (senza query params ritorna l'array completo come sempre, 6 pagine su 7 del frontend calcolano statistiche client-side sull'intera lista). Con `?page&pageSize` ritorna `{ games, total, page, pageSize, totalPages }`. `api.getGamesPage()` esiste lato frontend ma **nessuna pagina lo usa ancora** — il wiring UI (infinite scroll vs "carica altre" vs pagine numerate) resta un follow-up di design.
-- ✅ Cancellazione account self-service (GDPR "diritto all'oblio", `DELETE /api/auth/account`) — chiudeva l'altra voce storica in "Prossimi". Non un semplice `DELETE FROM User`: lo storico partite è condiviso con altri giocatori, quindi mazzi/partecipazioni usati in partite reali vengono riassegnati a un utente "fantasma" condiviso (`lib/accountDeletion.js`) invece di sparire e rompere lo storico altrui; solo i mazzi mai scesi in campo si cancellano per davvero. Bloccata se sei l'unico admin di un gruppo con altri membri (non se ne sei l'unico membro in assoluto — in quel caso il gruppo sparisce con te). 8 test di integrazione coprono anche i casi limite (storico condiviso preservato, fantasma condiviso tra più cancellazioni, collisioni sui vincoli `@@unique` quando si riassegna al fantasma).
-- ✅ Privacy Policy + Termini di Servizio (`PRIVACY_POLICY.md`, `TERMINI_SERVIZIO.md`, route pubbliche `/privacy` e `/termini`) — chiudeva l'altra voce storica in "Prossimi". Contenuto tecnicamente accurato (terze parti reali: Resend/Groq/Scryfall, meccanismo "utente fantasma" della cancellazione account) ma **titolare/contatto/hosting/legge applicabile restano segnaposto tra `[parentesi quadre]`** — serve completarli e far rivedere il testo da un legale prima della pubblicazione, specie per il target internazionale.
+### Fatto di recente
+- Verifica email, reset/cambio password self-service, validazione username, cancellazione account self-service (GDPR — vedi sezione Multi-tenancy per il meccanismo "utente fantasma").
+- Multi-gruppo: entry point in `AccountPage` per unirsi/creare un gruppo oltre al primo (backend e switcher lo supportavano già).
+- Icona app reale, Privacy Policy + Termini di Servizio (con segnaposto legali ancora da completare, vedi sopra).
+- Judge Bot: modello Groq dismesso sostituito, tetto di costo giornaliero globale (`JUDGE_DAILY_LLM_CAP`), fallback gratuito senza LLM quando il tetto è esaurito o Groq non risponde.
+- Test di integrazione HTTP (supertest + Postgres embedded dedicato, `backend/test/`) — 37 test: auth, gruppi, `resolveGroup`/`requireGroupAdmin`, isolamento multi-tenant, cancellazione account.
+- Paginazione opzionale `GET /api/groups/:slug/games` (retrocompatibile — vedi sopra). `api.getGamesPage()` esiste lato frontend ma **nessuna pagina lo usa ancora**.
 
 ### Prossimi (prerequisiti più che feature — bassa complessità, alto impatto, nessuno richiede Capacitor)
 - **Donazioni** (Ko-fi/Patreon/Buy Me a Coffee) — spedibile subito, zero rischio legale (vedi vincoli sopra), primo modo per validare se la community sostiene il progetto prima di investire in ads/IAP.
