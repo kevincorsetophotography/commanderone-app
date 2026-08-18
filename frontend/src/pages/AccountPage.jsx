@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
+import { useGroup } from '../hooks/useGroup'
 import { useTheme } from '../hooks/useTheme'
+import GroupJoinCreateForm from '../components/GroupJoinCreateForm'
 
-// Impostazioni account: email + stato verifica, cambio password, logout.
+// Impostazioni account: email + stato verifica, cambio password, gruppi, logout.
 export default function AccountPage() {
   const { logout, updateToken } = useAuth()
+  const { groups, activeGroup, selectGroup } = useGroup()
   const { t } = useTheme()
   const [me, setMe] = useState(null)
+  const [addingGroup, setAddingGroup] = useState(false)
+  const [joinedMsg, setJoinedMsg] = useState('')
 
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
@@ -96,6 +101,66 @@ export default function AccountPage() {
           <div style={{ fontSize: 12, color: t.textMuted, marginTop: 10 }}>
             Membro dal {new Date(me.createdAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
+        )}
+      </div>
+
+      <div style={card}>
+        <div style={label}>Gruppi</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: addingGroup ? 16 : 0 }}>
+          {(groups || []).map(g => {
+            const isActive = g.slug === activeGroup?.slug
+            return (
+              <div key={g.slug} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                padding: '10px 12px', borderRadius: 12,
+                border: `1px solid ${isActive ? t.primaryBorder : t.border}`,
+                background: isActive ? t.primaryBg : t.bgSurfaceAlt,
+              }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</div>
+                  <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}>{g.role === 'ADMIN' ? 'Amministratore' : 'Giocatore'}</div>
+                </div>
+                {isActive ? (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: t.primary, flexShrink: 0 }}>✓ Attivo</span>
+                ) : (
+                  <button onClick={() => selectGroup(g.slug)} style={{
+                    padding: '6px 12px', borderRadius: 9, border: `1px solid ${t.border}`,
+                    background: t.bgSurface, color: t.text, fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+                  }}>
+                    Passa a questo
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {joinedMsg && <div style={{ color: t.win, fontSize: 13, marginTop: 12 }}>✓ {joinedMsg}</div>}
+
+        {addingGroup ? (
+          <div style={{ marginTop: 16 }}>
+            <GroupJoinCreateForm
+              initialMode="join"
+              onSuccess={(group) => {
+                setAddingGroup(false)
+                setJoinedMsg(`Ora fai parte di "${group.name}"`)
+              }}
+            />
+            <div
+              onClick={() => setAddingGroup(false)}
+              style={{ marginTop: 10, fontSize: 12, color: t.textSub, cursor: 'pointer', textAlign: 'center' }}
+            >
+              Annulla
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => { setAddingGroup(true); setJoinedMsg('') }} style={{
+            marginTop: 12, width: '100%', padding: '10px 14px', borderRadius: 11,
+            border: `1px dashed ${t.border}`, background: 'transparent', color: t.textSub,
+            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+          }}>
+            + Crea o unisciti a un altro gruppo
+          </button>
         )}
       </div>
 
