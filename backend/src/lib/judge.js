@@ -153,7 +153,10 @@ async function groqChat({ model, messages, maxTokens = 1024, temperature = 0.1, 
 async function normalizeQuestion(question) {
   try {
     const raw = await groqChat({
-      model: 'llama-3.1-8b-instant',
+      // llama-3.1-8b-instant è stato dismesso da Groq il 16/08/2026 — sostituito
+      // dal modello che loro stessi indicano come rimpiazzo, stesso ruolo (call
+      // veloce/economica di normalizzazione). Vedi console.groq.com/docs/deprecations.
+      model: 'openai/gpt-oss-20b',
       maxTokens: 300,
       temperature: 0,
       messages: [
@@ -191,6 +194,46 @@ Respond only with valid JSON, no other text.`
   } catch {
     return { cardNames: [], concepts: [] };
   }
+}
+
+// ── Fallback gratuito (zero chiamate Groq) ──────────────────────────────────
+// Usato quando il tetto giornaliero LLM è esaurito (lib/judgeBudget.js) o come
+// modalità "sempre gratis": solo testo ufficiale già disponibile in locale/via
+// Scryfall (oracle text, ruling, sezioni CR per keyword) — nessuna sintesi,
+// quindi nessun rischio di allucinazione e nessun costo.
+async function lookupOnly(question) {
+  const questionKeywords = extractKeywords(question);
+  const crMatches = searchInSections(_crSections, questionKeywords, 6);
+
+  const cardNames = await detectCardNames(question);
+  const cardContexts = (
+    await Promise.all(cardNames.slice(0, 3).map(fetchCardContext))
+  ).filter(Boolean);
+
+  const sources = [
+    ...crMatches.map(r => ({ type: 'rule', id: r.id, text: r.text })),
+    ...cardContexts.map(c => ({
+      type: 'card',
+      id: c.name,
+      text: `${c.typeLine}\n${c.oracleText}` +
+        (c.rulings.length > 0 ? '\n\nRuling ufficiali:\n' + c.rulings.map(r => `- ${r}`).join('\n') : ''),
+    })),
+  ];
+
+  // Testo generico: questo fallback scatta sia per tetto giornaliero esaurito
+  // sia per un errore/indisponibilità di Groq — non presumere la causa qui.
+  const answer = sources.length > 0
+    ? 'La consulenza AI non è disponibile in questo momento: ecco il testo ufficiale (oracle text, ruling e regole) pertinente trovato per la tua domanda, senza sintesi automatica.'
+    : 'La consulenza AI non è disponibile in questo momento e non ho trovato carte o regole pertinenti per questa domanda. Riprova più tardi, oppure specifica il nome esatto della carta.';
+
+  return {
+    answer,
+    explanation: '',
+    confidence: 0,
+    rulesUsed: crMatches.map(r => r.id),
+    cardsDetected: cardContexts.map(c => c.name),
+    sources,
+  };
 }
 
 // ── Entry point ───────────────────────────────────────────────────────────────
@@ -303,5 +346,6 @@ module.exports = {
   parseComprehensiveRules,
   searchInSections,
   extractKeywords,
-  askJudge
+  askJudge,
+  lookupOnly
 };

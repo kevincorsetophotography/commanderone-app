@@ -258,6 +258,7 @@ model JudgeQuestion {
   confidence  Float
   sourcesJson String   // JSON array di { type, id, text }
   rulesUsed   String   // JSON array di rule IDs
+  llmUsed     Boolean  @default(true) // false = risposta di solo lookup (oracle/ruling/CR), niente Groq: tetto giornaliero raggiunto
   createdAt   DateTime @default(now())
   group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId     Int
@@ -265,6 +266,14 @@ model JudgeQuestion {
   userId      Int
 
   @@index([groupId])
+}
+
+// Contatore giornaliero (globale, non per gruppo) delle domande al judge che hanno
+// usato Groq. Tetto di sicurezza sui costi: oltre JUDGE_DAILY_LLM_CAP si passa in
+// automatico al fallback di solo lookup (askJudge → lookupOnly in lib/judge.js).
+model JudgeLlmUsage {
+  date  String @id // YYYY-MM-DD (UTC)
+  count Int    @default(0)
 }
 
 model GamePlayer {

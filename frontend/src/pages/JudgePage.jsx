@@ -61,8 +61,14 @@ function HistoryItem({ item, t }) {
             <span>{item.user.username}</span>
             <span>·</span>
             <span>{date}</span>
-            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: confColor, flexShrink: 0 }} />
-            <span style={{ color: confColor, fontWeight: 600 }}>{pct}%</span>
+            {item.llmUsed === false ? (
+              <span title="Solo fonti ufficiali, senza sintesi AI">📚</span>
+            ) : (
+              <>
+                <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: confColor, flexShrink: 0 }} />
+                <span style={{ color: confColor, fontWeight: 600 }}>{pct}%</span>
+              </>
+            )}
           </div>
         </div>
         <span style={{
@@ -109,7 +115,7 @@ export default function JudgePage() {
       // aggiorna storico aggiungendo la nuova domanda in cima (ottimistico)
       setHistory(prev => [{
         id: Date.now(), question: q, answer: data.answer,
-        confidence: data.confidence, createdAt: new Date().toISOString(),
+        confidence: data.confidence, llmUsed: data.llmUsed, createdAt: new Date().toISOString(),
         user: { username: user?.username || 'Tu', avatarCardName: user?.avatarCardName || null, avatarScryfallId: user?.avatarScryfallId || null }
       }, ...prev.slice(0, 29)])
     } catch (err) {
@@ -198,7 +204,17 @@ export default function JudgePage() {
           <div style={{ ...glass, marginBottom: 12, borderLeft: `3px solid ${t.primary}` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: t.primary }}>Ruling</span>
-              <ConfidenceBadge value={result.confidence} />
+              {result.llmUsed !== false ? (
+                <ConfidenceBadge value={result.confidence} />
+              ) : (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                  background: t.bgMuted, color: t.textSub, border: `1px solid ${t.border}`,
+                }} title="Solo fonti ufficiali (oracle text, ruling, regole), senza sintesi AI">
+                  📚 Solo fonti ufficiali
+                </span>
+              )}
             </div>
             <div style={{ fontSize: 15, color: t.text, lineHeight: 1.65, fontWeight: 500 }}>
               {result.answer}
@@ -242,7 +258,7 @@ export default function JudgePage() {
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, color: t.textSub, fontSize: 13, fontWeight: 600 }}
               >
                 <span style={{ fontSize: 11, transition: 'transform 0.2s', display: 'inline-block', transform: showSources ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-                Sezioni CR usate ({result.sources.length})
+                Fonti usate ({result.sources.length})
               </button>
               {showSources && (
                 <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
