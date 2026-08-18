@@ -62,7 +62,8 @@ try {
   await admin.end()
 
   console.log('📦 Sincronizzo lo schema (prisma db push)...')
-  execSync('npx prisma db push --skip-generate', { stdio: 'inherit' })
+  // --accept-data-loss: come in produzione (start:prod). Il DB dev è usa-e-getta.
+  execSync('npx prisma db push --skip-generate --accept-data-loss', { stdio: 'inherit' })
 
   const { PrismaClient } = await import('@prisma/client')
   const prisma = new PrismaClient()

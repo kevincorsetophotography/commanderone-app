@@ -31,12 +31,24 @@ export function AuthProvider({ children }) {
     return user;
   };
 
-  const register = async (username, password) => {
-    const { token, user } = await api.register({ username, password });
+  const register = async (username, email, password) => {
+    const { token, user } = await api.register({ username, email, password });
     localStorage.setItem('ct_token', token);
     localStorage.setItem('ct_user', JSON.stringify(user));
     setUser(user);
     return user;
+  };
+
+  // Sostituisce il JWT corrente (es. dopo un cambio password, che invalida i vecchi token)
+  const updateToken = (token) => {
+    if (token) localStorage.setItem('ct_token', token);
+  };
+
+  // Login "già fatto" lato server (es. reset password che ritorna token+user)
+  const adoptSession = (token, user) => {
+    localStorage.setItem('ct_token', token);
+    localStorage.setItem('ct_user', JSON.stringify(user));
+    setUser(user);
   };
 
   const logout = () => {
@@ -55,7 +67,7 @@ export function AuthProvider({ children }) {
     });
   };
 
-  const value = useMemo(() => ({ user, login, register, logout, updateUser }), [user]);
+  const value = useMemo(() => ({ user, login, register, logout, updateUser, updateToken, adoptSession }), [user]);
 
   return createElement(AuthContext.Provider, { value }, children);
 }

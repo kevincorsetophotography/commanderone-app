@@ -26,6 +26,9 @@ import GamePage from './pages/GamePage'
 import JudgePage from './pages/JudgePage'
 import GiocaPage from './pages/GiocaPage'
 import GuidaPage from './pages/GuidaPage'
+import AccountPage from './pages/AccountPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
+import VerifyEmailPage from './pages/VerifyEmailPage'
 import NotificationBell from './components/NotificationBell'
 import PlayerAvatar from './components/PlayerAvatar'
 
@@ -217,6 +220,7 @@ function Layout() {
   const { activeGroup } = useGroup()
   const { t, dark, toggleDark } = useTheme()
   const isMobile = useIsMobile()
+  const navigate = useNavigate()
   const isGroupAdmin = activeGroup?.role === 'ADMIN'
 
   const routes = (
@@ -236,6 +240,7 @@ function Layout() {
       <Route path="/nuova-partita" element={<NewGamePage />} />
       <Route path="/giudice"       element={<JudgePage />} />
       <Route path="/guida"         element={<GuidaPage />} />
+      <Route path="/account"       element={<AccountPage />} />
       <Route path="/admin"         element={isGroupAdmin ? <AdminPage /> : <Navigate to="/" replace />} />
     </Routes>
   )
@@ -272,6 +277,7 @@ function Layout() {
                   })}>Admin</NavLink>
                 )}
                 <IconButton onClick={toggleDark} title={dark ? 'Light mode' : 'Dark mode'}>{dark ? '☀' : '🌙'}</IconButton>
+                <IconButton onClick={() => navigate('/account')} title="Account">⚙</IconButton>
                 <UserChip avatar={26} hideLabel />
               </div>
             </div>
@@ -294,6 +300,7 @@ function Layout() {
                 <UserChip />
                 <NotificationBell />
                 <IconButton onClick={toggleDark} title={dark ? 'Passa a light mode' : 'Passa a dark mode'}>{dark ? '☀' : '🌙'}</IconButton>
+                <IconButton onClick={() => navigate('/account')} title="Impostazioni account">⚙</IconButton>
                 <IconButton onClick={logout} title="Esci">Esci</IconButton>
               </div>
             </div>
@@ -366,8 +373,10 @@ export default function App() {
           <GroupProvider>
             <BrowserRouter>
               <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/*"     element={<PrivateRoute><GroupGate /></PrivateRoute>} />
+                <Route path="/login"          element={<Login />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/verify-email"   element={<VerifyEmailPage />} />
+                <Route path="/*"              element={<PrivateRoute><GroupGate /></PrivateRoute>} />
               </Routes>
             </BrowserRouter>
           </GroupProvider>

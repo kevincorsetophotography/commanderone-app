@@ -31,7 +31,9 @@ const req = async (method, path, body) => {
   const payload = await parseResponse(res);
 
   if (!res.ok) {
-    throw payload || { error: 'Errore di rete' };
+    // status esplicito: serve a distinguere "token invalido" (401) da errori
+    // transitori (500, server in riavvio) senza doverne indovinare la causa dal testo.
+    throw { ...(payload || { error: 'Errore di rete' }), status: res.status };
   }
 
   return payload;
@@ -49,7 +51,13 @@ export const api = {
   // auth
   register:      (data) => req('POST',  '/auth/register', data),
   login:         (data) => req('POST',  '/auth/login', data),
+  me:            ()     => req('GET',   '/auth/me'),
   updateProfile: (data) => req('PATCH', '/auth/profile', data),
+  changePassword:     (currentPassword, newPassword) => req('PATCH', '/auth/password', { currentPassword, newPassword }),
+  forgotPassword:     (email) => req('POST', '/auth/forgot-password', { email }),
+  resetPassword:      (token, newPassword) => req('POST', '/auth/reset-password', { token, newPassword }),
+  verifyEmail:        (token) => req('POST', '/auth/verify-email', { token }),
+  resendVerification: ()     => req('POST', '/auth/resend-verification'),
 
   // gruppi (creazione/adesione, non scoped a un gruppo specifico)
   myGroups:            () => req('GET',  '/groups/mine'),
