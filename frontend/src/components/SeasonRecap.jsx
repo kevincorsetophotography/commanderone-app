@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas'
 import QRCode from 'qrcode'
 import { Trans, useTranslation } from 'react-i18next'
 import { useTheme } from '../hooks/useTheme'
-import { seasonOf } from '../lib/seasons'
+import { seasonOf, seasonLabel as trSeasonLabel } from '../lib/seasons'
 import { ordinal } from '../lib/ordinal'
 
 // ── palette brand ──────────────────────────────────────────────────────────────
@@ -352,7 +352,7 @@ export default function SeasonRecap({ season, seasonKey, seasons, games, playerS
   const [loading, setLoading]     = useState(true)
   const [dlState, setDlState]     = useState(null)
 
-  const seasonLabel = seasons.find(s => s.key === seasonKey)?.label || seasonKey
+  const seasonLabel = trSeasonLabel(seasonKey, tr)
   const { sg, spotlight, topStreak, topKiller, deckCount, uniquePlayers, totalKills } =
     useMemo(() => computeSeason(games, seasonKey), [games, seasonKey])
 

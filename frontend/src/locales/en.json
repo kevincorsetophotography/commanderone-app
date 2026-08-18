@@ -146,6 +146,13 @@
     "cta": "Support",
     "dismiss": "Hide for a month"
   },
+  "seasons": {
+    "months": {
+      "0": "January–April",
+      "1": "May–August",
+      "2": "September–December"
+    }
+  },
   "common": {
     "back": "← Back",
     "edit": "Edit",

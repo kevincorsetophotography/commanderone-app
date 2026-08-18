@@ -17,7 +17,7 @@ import { getAchievements } from '../lib/achievements'
 import { BRACKETS, BRACKET_OPTIONS, bracketLabel } from '../lib/brackets'
 import { ARCHETYPE_OPTIONS } from '../lib/archetypes'
 import { fetchCommanderColors, getCardPrintings } from '../lib/scryfall'
-import { seasonOf, computeStandings } from '../lib/seasons'
+import { seasonOf, computeStandings, seasonLabel } from '../lib/seasons'
 import { ordinal } from '../lib/ordinal'
 
 const COLOR_MAP = { W: '#f5f0e0', U: '#b8d4e8', B: '#c8b8d8', R: '#e8c0b0', G: '#b8d8b8' }
@@ -221,8 +221,8 @@ export default function PlayerProfilePage() {
     const { standings } = computeStandings(games, s.key)
     const idx = standings.findIndex(st => st.id === pid)
     if (idx < 0) return null
-    return { label: s.label, rank: idx + 1, total: standings.length, ...standings[idx] }
-  }, [games, pid])
+    return { label: seasonLabel(s.key, tr), rank: idx + 1, total: standings.length, ...standings[idx] }
+  }, [games, pid, tr])
 
   // ── Rivalità ──
   const [rivalId, setRivalId] = useState(null)

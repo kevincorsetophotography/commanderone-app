@@ -17,6 +17,16 @@ export function seasonOf(date) {
   }
 }
 
+// Label tradotta a partire dalla sola season key ("2026-0"), senza bisogno
+// dell'oggetto season completo — comodo perché la key è sempre disponibile
+// dove serve mostrare l'etichetta (select stagione, snapshot, ecc.), mentre
+// `label` sopra resta l'italiano hardcoded per compatibilità con chi non
+// passa ancora `tr` (vedi CLAUDE.md, nota strutturale i18n Fase 2).
+export function seasonLabel(key, tr) {
+  const [year, idx] = key.split('-')
+  return `${tr(`seasons.months.${idx}`)} ${year}`
+}
+
 // Elenco stagioni presenti nei dati, dalla più recente alla più vecchia.
 export function listSeasons(games) {
   const map = new Map()
