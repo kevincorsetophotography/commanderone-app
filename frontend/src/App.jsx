@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 
 function RedirectWithSearch({ to }) {
   const { search } = useLocation()
@@ -26,6 +26,8 @@ import GamePage from './pages/GamePage'
 import JudgePage from './pages/JudgePage'
 import GiocaPage from './pages/GiocaPage'
 import GuidaPage from './pages/GuidaPage'
+import PrivacyPage from './pages/PrivacyPage'
+import TermsPage from './pages/TermsPage'
 import NotificationBell from './components/NotificationBell'
 import PlayerAvatar from './components/PlayerAvatar'
 
@@ -334,6 +336,8 @@ function FanContentDisclaimer({ t }) {
     <div style={{ marginTop: 32, paddingTop: 16, borderTop: `1px solid ${t.border}`, fontSize: 10.5, color: t.textMuted, lineHeight: 1.5, textAlign: 'center' }}>
       CommanderOne è Fan Content non ufficiale, permesso dalla Fan Content Policy di Wizards of the Coast.
       Non è approvato/sostenuto da Wizards. Le porzioni di proprietà di Wizards sono ©Wizards of the Coast LLC.
+      <br />
+      <Link to="/privacy" style={{ color: t.textMuted }}>Privacy Policy</Link> · <Link to="/termini" style={{ color: t.textMuted }}>Termini di Servizio</Link>
     </div>
   )
 }
@@ -366,8 +370,12 @@ export default function App() {
           <GroupProvider>
             <BrowserRouter>
               <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/*"     element={<PrivateRoute><GroupGate /></PrivateRoute>} />
+                <Route path="/login"   element={<Login />} />
+                {/* Pubbliche apposta: chi valuta l'app prima di registrarsi (o una
+                    store review) deve poterle leggere senza avere un account. */}
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/termini" element={<TermsPage />} />
+                <Route path="/*"       element={<PrivateRoute><GroupGate /></PrivateRoute>} />
               </Routes>
             </BrowserRouter>
           </GroupProvider>

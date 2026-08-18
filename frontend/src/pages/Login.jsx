@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 
@@ -115,6 +115,13 @@ export default function Login() {
             </button>
           </form>
 
+          {mode === 'register' && (
+            <div style={{ marginTop: 12, textAlign: 'center', fontSize: 11, color: t.textMuted, lineHeight: 1.5 }}>
+              Registrandoti accetti i <Link to="/termini" style={{ color: t.textSub }}>Termini di Servizio</Link> e
+              {' '}la <Link to="/privacy" style={{ color: t.textSub }}>Privacy Policy</Link>.
+            </div>
+          )}
+
           <div style={{ marginTop: 18, textAlign: 'center', fontSize: 13, color: t.textSub }}>
             {mode === 'login' ? 'Non hai un account?' : 'Hai già un account?'}{' '}
             <span
@@ -128,6 +135,8 @@ export default function Login() {
 
         <div style={{ marginTop: 22, fontSize: 10, color: t.textMuted, textAlign: 'center', lineHeight: 1.5, maxWidth: 320 }}>
           CommanderOne è Fan Content non ufficiale, permesso dalla Fan Content Policy di Wizards of the Coast. Non approvato/sostenuto da Wizards.
+          <br />
+          <Link to="/privacy" style={{ color: t.textMuted }}>Privacy Policy</Link> · <Link to="/termini" style={{ color: t.textMuted }}>Termini di Servizio</Link>
         </div>
       </div>
     </div>
