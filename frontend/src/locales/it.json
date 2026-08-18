@@ -116,6 +116,26 @@
       "label": "Lingua"
     }
   },
+  "common": {
+    "back": "← Indietro"
+  },
+  "gioca": {
+    "logGame": "Registra Partita",
+    "logGameSubtitle": "Aggiungi il risultato di una partita appena finita",
+    "judgeBotSubtitle": "Ruling Commander · Comprehensive Rules + Scryfall",
+    "recentDecks": "Ultimi mazzi usati",
+    "lastGame": "Ultima partita",
+    "tomorrow": "Domani",
+    "inDays": "tra {{count}} giorni"
+  },
+  "gamePage": {
+    "notFound": "Partita non trovata",
+    "notFoundMessage": "Questa partita non esiste.",
+    "playersCount_one": "{{count}} giocatore",
+    "playersCount_other": "{{count}} giocatori",
+    "loggedBy": " · registrata da {{username}}",
+    "eliminations": "Eliminazioni"
+  },
   "time": {
     "now": "ora",
     "minutesAgo": "{{count}}m fa",

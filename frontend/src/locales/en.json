@@ -116,6 +116,26 @@
       "label": "Language"
     }
   },
+  "common": {
+    "back": "← Back"
+  },
+  "gioca": {
+    "logGame": "Log Game",
+    "logGameSubtitle": "Add the result of a game you just finished",
+    "judgeBotSubtitle": "Ruling Commander · Comprehensive Rules + Scryfall",
+    "recentDecks": "Recently used decks",
+    "lastGame": "Last game",
+    "tomorrow": "Tomorrow",
+    "inDays": "in {{count}} days"
+  },
+  "gamePage": {
+    "notFound": "Game not found",
+    "notFoundMessage": "This game doesn't exist.",
+    "playersCount_one": "{{count}} player",
+    "playersCount_other": "{{count}} players",
+    "loggedBy": " · logged by {{username}}",
+    "eliminations": "Eliminations"
+  },
   "time": {
     "now": "now",
     "minutesAgo": "{{count}}m ago",
