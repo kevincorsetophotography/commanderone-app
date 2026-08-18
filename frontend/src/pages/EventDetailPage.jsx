@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../hooks/useAuth'
@@ -8,6 +9,7 @@ import { useFeedback } from '../hooks/useFeedback'
 import { Skeleton } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import PlayerAvatar from '../components/PlayerAvatar'
+import { ordinal } from '../lib/ordinal'
 
 const FORMAT_BADGE = {
   multiplayer: { label: '🎴 Multiplayer', color: '#5FB87A' },
@@ -20,6 +22,8 @@ export default function EventDetailPage() {
   const eid = Number.parseInt(id, 10)
   const navigate = useNavigate()
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const { user } = useAuth()
   const { activeGroup } = useGroup()
   const { toast, confirm } = useFeedback()
@@ -33,16 +37,16 @@ export default function EventDetailPage() {
 
   const load = () => {
     setLoading(true); setError('')
-    api.getEvent(eid).then(setEvent).catch(e => setError(e.error || 'Evento non trovato')).finally(() => setLoading(false))
+    api.getEvent(eid).then(setEvent).catch(e => setError(e.error || tr('eventDetailPage.notFound'))).finally(() => setLoading(false))
   }
   useEffect(load, [eid])
 
   const back = (
-    <button onClick={() => navigate('/eventi')} style={{ padding: '6px 14px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.bgMuted, color: t.textSub, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>← Eventi</button>
+    <button onClick={() => navigate('/eventi')} style={{ padding: '6px 14px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.bgMuted, color: t.textSub, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>{tr('eventDetailPage.backToEvents')}</button>
   )
 
   if (loading) return (<div>{back}<Skeleton h={160} r={16} /></div>)
-  if (error || !event) return (<div>{back}<EmptyState icon="🔍" title="Evento non trovato" message={error} /></div>)
+  if (error || !event) return (<div>{back}<EmptyState icon="🔍" title={tr('eventDetailPage.notFound')} message={error} /></div>)
 
   const going = event.rsvps?.some(r => r.userId === user?.id)
   const registrants = event.rsvps || []
@@ -55,30 +59,30 @@ export default function EventDetailPage() {
 
   const toggleRsvp = async () => {
     try { const { rsvps } = await api.toggleRsvp(eid); setEvent(ev => ({ ...ev, rsvps })) }
-    catch (e) { toast(e.error || 'Errore adesione', 'error') }
+    catch (e) { toast(e.error || tr('eventsPage.rsvpError'), 'error') }
   }
   const generateRound = async () => {
     setBusy(true)
-    try { setEvent(await api.generateRound(eid)); toast('Turno generato', 'success') }
-    catch (e) { toast(e.error || 'Errore', 'error') }
+    try { setEvent(await api.generateRound(eid)); toast(tr('eventDetailPage.roundGenerated'), 'success') }
+    catch (e) { toast(e.error || tr('eventDetailPage.genericError'), 'error') }
     finally { setBusy(false) }
   }
   const deleteRound = async (rid) => {
-    const ok = await confirm({ title: 'Eliminare il turno?', message: 'Tavoli e abbinamenti verranno rifatti.', confirmLabel: 'Elimina', danger: true })
+    const ok = await confirm({ title: tr('eventDetailPage.confirmDeleteRoundTitle'), message: tr('eventDetailPage.confirmDeleteRoundMessage'), confirmLabel: tr('common.delete'), danger: true })
     if (!ok) return
-    try { await api.deleteRound(eid, rid); load() } catch (e) { toast(e.error || 'Errore', 'error') }
+    try { await api.deleteRound(eid, rid); load() } catch (e) { toast(e.error || tr('eventDetailPage.genericError'), 'error') }
   }
   const submitResult = async (tbl) => {
     const sc = scores[tbl.id] || { a: 0, b: 0 }
     try {
       setEvent(await api.submitTableResult(eid, tbl.id, { scoreA: sc.a, scoreB: sc.b }))
-      toast('Risultato salvato', 'success')
-    } catch (e) { toast(e.error || 'Errore', 'error') }
+      toast(tr('eventDetailPage.resultSaved'), 'success')
+    } catch (e) { toast(e.error || tr('eventDetailPage.genericError'), 'error') }
   }
   const setScore = (tableId, side, val) => setScores(s => ({ ...s, [tableId]: { ...(s[tableId] || { a: 0, b: 0 }), [side]: val } }))
 
-  const dateLine = new Date(event.startsAt).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-  const time = event.allDay ? null : new Date(event.startsAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+  const dateLine = new Date(event.startsAt).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const time = event.allDay ? null : new Date(event.startsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 
   // Un tavolo (pod o pairing)
   const renderTable = (tbl) => {
@@ -91,15 +95,15 @@ export default function EventDetailPage() {
         background: mine ? (t.primaryBg || t.bgMuted) : t.bgMuted,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{isBye ? 'Bye' : (is1v1 ? `Match ${tbl.number}` : `Tavolo ${tbl.number}`)}</span>
-          {mine && <span style={{ fontSize: 10.5, fontWeight: 700, color: t.primary, background: t.primaryBg, border: `1px solid ${t.primaryBorder}`, padding: '1px 7px', borderRadius: 20 }}>Il tuo {is1v1 ? 'match' : 'tavolo'}</span>}
-          {tbl.done && <span style={{ fontSize: 11, color: t.win, marginLeft: 'auto' }}>✓ concluso</span>}
+          <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{isBye ? tr('eventDetailPage.bye') : (is1v1 ? tr('eventDetailPage.matchNumber', { number: tbl.number }) : tr('eventDetailPage.tableNumber', { number: tbl.number }))}</span>
+          {mine && <span style={{ fontSize: 10.5, fontWeight: 700, color: t.primary, background: t.primaryBg, border: `1px solid ${t.primaryBorder}`, padding: '1px 7px', borderRadius: 20 }}>{is1v1 ? tr('eventDetailPage.yourMatch') : tr('eventDetailPage.yourTable')}</span>}
+          {tbl.done && <span style={{ fontSize: 11, color: t.win, marginLeft: 'auto' }}>{tr('eventDetailPage.done')}</span>}
         </div>
 
         {isBye ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: t.textSub }}>
             <PlayerAvatar username={tbl.seats[0].user.username} avatarCardName={tbl.seats[0].user.avatarCardName} avatarScryfallId={tbl.seats[0].user.avatarScryfallId} size={26} highlight={tbl.seats[0].user.id === user?.id} />
-            {tbl.seats[0].user.username} · passa il turno
+            {tbl.seats[0].user.username} · {tr('eventDetailPage.byePass')}
           </div>
         ) : is1v1 ? (() => {
           const sa = tbl.seats.find(s => s.seat === 0) || tbl.seats[0]
@@ -123,7 +127,7 @@ export default function EventDetailPage() {
                 </span>
                 {player(sb, winB)}
               </div>
-              {tbl.done && tbl.isDraw && <div style={{ fontSize: 12, color: t.textMuted, marginTop: 6 }}>Pareggio</div>}
+              {tbl.done && tbl.isDraw && <div style={{ fontSize: 12, color: t.textMuted, marginTop: 6 }}>{tr('eventDetailPage.draw')}</div>}
               {canEnter && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -136,7 +140,7 @@ export default function EventDetailPage() {
                     <button style={stepBtn} onClick={() => setScore(tbl.id, 'b', Math.min(event.bestOf || 1, sc.b + 1))}>+</button>
                   </span>
                   <button onClick={() => submitResult(tbl)} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: t.primary, color: t.primaryFg, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    Salva risultato
+                    {tr('eventDetailPage.saveResult')}
                   </button>
                 </div>
               )}
@@ -155,15 +159,15 @@ export default function EventDetailPage() {
               {tbl.done && tbl.game ? (
                 <>
                   <span style={{ fontSize: 13, color: t.win, fontWeight: 600 }}>🏆 {tbl.game.players[0]?.user.username}{tbl.game.players[0]?.deck?.name ? ` · ${tbl.game.players[0].deck.name}` : ''}</span>
-                  <button onClick={() => navigate(`/partita/${tbl.game.id}`)} style={{ ...btnGhost, padding: '5px 12px', fontSize: 12 }}>Vedi partita ›</button>
+                  <button onClick={() => navigate(`/partita/${tbl.game.id}`)} style={{ ...btnGhost, padding: '5px 12px', fontSize: 12 }}>{tr('eventDetailPage.viewGame')}</button>
                 </>
               ) : (isAdmin || mine) ? (
                 <button
                   onClick={() => navigate('/nuova-partita', { state: { podContext: { eventId: eid, tableId: tbl.id, date: event.startsAt, players: tbl.seats.map(s => ({ userId: s.user.id, username: s.user.username })) } } })}
                   style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: t.primary, color: t.primaryFg, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                >Registra partita</button>
+                >{tr('eventDetailPage.logGame')}</button>
               ) : (
-                <span style={{ fontSize: 12, color: t.textMuted }}>In attesa del risultato</span>
+                <span style={{ fontSize: 12, color: t.textMuted }}>{tr('eventDetailPage.waitingResult')}</span>
               )}
             </div>
           </div>
@@ -181,7 +185,7 @@ export default function EventDetailPage() {
         const diffMs = new Date(event.startsAt) - Date.now()
         const diffDays = Math.ceil(diffMs / 86400000)
         const isPast = diffMs < 0
-        const countdown = isPast ? null : diffDays === 0 ? 'Oggi' : diffDays === 1 ? 'Domani' : `tra ${diffDays} giorni`
+        const countdown = isPast ? null : diffDays === 0 ? tr('feed.today') : diffDays === 1 ? tr('gioca.tomorrow') : tr('gioca.inDays', { count: diffDays })
 
         return (
           <div style={{
@@ -198,7 +202,7 @@ export default function EventDetailPage() {
                     {badge.label}{event.format === '1v1' && event.bestOf ? ` · Bo${event.bestOf}` : ''}
                   </span>
                 )}
-                {!badge && <span style={{ fontSize: 12, fontWeight: 600, color: t.textSub, background: t.bgMuted, padding: '3px 10px', borderRadius: 20, border: `1px solid ${t.border}` }}>🎴 Serata libera</span>}
+                {!badge && <span style={{ fontSize: 12, fontWeight: 600, color: t.textSub, background: t.bgMuted, padding: '3px 10px', borderRadius: 20, border: `1px solid ${t.border}` }}>{tr('eventDetailPage.freeNight')}</span>}
                 {countdown && (
                   <span style={{ fontSize: 12, fontWeight: 700, color: t.primary, background: t.primaryBg, border: `1px solid ${t.primaryBorder}`, padding: '3px 10px', borderRadius: 20 }}>
                     {countdown}
@@ -214,9 +218,9 @@ export default function EventDetailPage() {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14, flexWrap: 'wrap' }}>
                 <button onClick={toggleRsvp} style={{ padding: '7px 18px', borderRadius: 20, fontSize: 13, fontWeight: 700, cursor: 'pointer', border: `1px solid ${going ? t.primary : t.border}`, background: going ? t.primary : 'transparent', color: going ? t.primaryFg : t.textSub }}>
-                  {going ? '✓ Ci sono' : '+ Ci sono'}
+                  {going ? tr('eventsPage.going') : tr('eventDetailPage.rsvpCta')}
                 </button>
-                <span style={{ fontSize: 12, color: t.textMuted }}>{registrants.length} iscritt{registrants.length === 1 ? 'o' : 'i'}</span>
+                <span style={{ fontSize: 12, color: t.textMuted }}>{tr('eventDetailPage.registrantsCount', { count: registrants.length })}</span>
               </div>
             </div>
           </div>
@@ -225,9 +229,9 @@ export default function EventDetailPage() {
 
       {/* Iscritti */}
       <div style={card}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 10 }}>Iscritti</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 10 }}>{tr('eventDetailPage.registrants')}</div>
         {registrants.length === 0 ? (
-          <div style={{ fontSize: 13, color: t.textMuted }}>Nessun iscritto. Premi “Ci sono”.</div>
+          <div style={{ fontSize: 13, color: t.textMuted }}>{tr('eventDetailPage.noRegistrants')}</div>
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {registrants.map(r => (
@@ -245,40 +249,38 @@ export default function EventDetailPage() {
           {/* Vincitore */}
           {event.finished && event.winner && (
             <div style={{ ...card, border: `1px solid #E8B84B88`, background: '#E8B84B1f', textAlign: 'center', fontSize: 16, fontWeight: 700, color: '#E8B84B' }}>
-              🏆 Vincitore: {event.winner.username} · {event.winner.points} punti
+              {tr('eventDetailPage.winnerBanner', { username: event.winner.username, points: event.winner.points })}
             </div>
           )}
 
           <div style={card}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {event.format === '1v1' ? 'Torneo 1v1 (svizzera)' : 'Torneo a pod'}
+                {event.format === '1v1' ? tr('eventDetailPage.tournament1v1') : tr('eventDetailPage.tournamentPod')}
               </div>
               {isAdmin && event.rounds.length === 0 && (
                 <button style={{ ...btnPrimary, marginLeft: 'auto' }} onClick={generateRound} disabled={busy}>
-                  {event.format === 'multiplayer' ? 'Genera tavoli' : 'Genera abbinamenti'}
+                  {event.format === 'multiplayer' ? tr('eventDetailPage.generateTables') : tr('eventDetailPage.generatePairings')}
                 </button>
               )}
               {isAdmin && event.canNextRound && (
-                <button style={{ ...btnPrimary, marginLeft: 'auto' }} onClick={generateRound} disabled={busy}>Genera turno {event.rounds.length + 1}</button>
+                <button style={{ ...btnPrimary, marginLeft: 'auto' }} onClick={generateRound} disabled={busy}>{tr('eventDetailPage.generateRoundN', { number: event.rounds.length + 1 })}</button>
               )}
-              {event.finished && <span style={{ marginLeft: 'auto', fontSize: 12, color: t.win, fontWeight: 700 }}>Torneo concluso</span>}
+              {event.finished && <span style={{ marginLeft: 'auto', fontSize: 12, color: t.win, fontWeight: 700 }}>{tr('eventDetailPage.tournamentFinished')}</span>}
             </div>
 
             {event.rounds.length === 0 ? (
               <div style={{ fontSize: 13, color: t.textMuted }}>
-                {event.format === 'multiplayer'
-                  ? 'Quando tutti sono iscritti, l’admin genera i tavoli (pod da 3 a 5, preferendo 4).'
-                  : 'Quando tutti sono iscritti, l’admin genera gli abbinamenti del primo turno.'}
+                {event.format === 'multiplayer' ? tr('eventDetailPage.podHint') : tr('eventDetailPage.swissHint')}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {event.rounds.map((r, ri) => (
                   <div key={r.id}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Turno {r.number}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{tr('eventDetailPage.roundNumber', { number: r.number })}</span>
                       {isAdmin && ri === event.rounds.length - 1 && (
-                        <button style={{ ...btnGhost, marginLeft: 'auto', padding: '4px 10px', fontSize: 12 }} onClick={() => deleteRound(r.id)}>Rifai turno</button>
+                        <button style={{ ...btnGhost, marginLeft: 'auto', padding: '4px 10px', fontSize: 12 }} onClick={() => deleteRound(r.id)}>{tr('eventDetailPage.redoRound')}</button>
                       )}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -293,17 +295,17 @@ export default function EventDetailPage() {
           {/* Classifica (1v1) */}
           {event.format === '1v1' && event.standings?.length > 0 && event.rounds.length > 0 && (
             <div style={card}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 10 }}>Classifica</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 10 }}>{tr('eventDetailPage.standings')}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {event.standings.map((s, i) => (
                   <div key={s.userId} style={{
                     display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 8,
                     background: s.userId === user?.id ? (t.primaryBg || t.bgMuted) : 'transparent',
                   }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: i === 0 ? '#E8B84B' : t.textMuted, minWidth: 22 }}>{i + 1}°</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: i === 0 ? '#E8B84B' : t.textMuted, minWidth: 22 }}>{ordinal(i + 1, locale)}</span>
                     <PlayerAvatar username={s.username} avatarCardName={event.rsvps?.find(r => r.userId === s.userId)?.user?.avatarCardName ?? null} avatarScryfallId={event.rsvps?.find(r => r.userId === s.userId)?.user?.avatarScryfallId ?? null} size={24} highlight={s.userId === user?.id} />
                     <span style={{ fontSize: 14, fontWeight: 600, color: t.text, flex: 1, minWidth: 0 }}>{s.username}</span>
-                    <span style={{ fontSize: 12, color: t.textMuted }}>{s.wins}V · {s.draws}N · {s.losses}P{s.byes ? ` · ${s.byes} bye` : ''}</span>
+                    <span style={{ fontSize: 12, color: t.textMuted }}>{tr('eventDetailPage.recordLine', { w: s.wins, d: s.draws, l: s.losses })}{s.byes ? tr('eventDetailPage.byeSuffix', { count: s.byes }) : ''}</span>
                     <span style={{ fontSize: 16, fontWeight: 800, color: t.text, minWidth: 28, textAlign: 'right' }}>{s.points}</span>
                   </div>
                 ))}
@@ -312,7 +314,7 @@ export default function EventDetailPage() {
           )}
         </>
       ) : (
-        <div style={{ ...card, color: t.textMuted, fontSize: 13 }}>Evento semplice (senza torneo). Il formato si imposta alla creazione.</div>
+        <div style={{ ...card, color: t.textMuted, fontSize: 13 }}>{tr('eventDetailPage.simpleEventNote')}</div>
       )}
     </div>
   )
