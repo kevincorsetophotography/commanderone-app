@@ -90,7 +90,7 @@ gratuito se il tetto giornaliero è esaurito o Groq non risponde)
 - Judge Bot: modello Groq dismesso sostituito, tetto di costo giornaliero globale (`JUDGE_DAILY_LLM_CAP`), fallback gratuito senza LLM quando il tetto è esaurito o Groq non risponde.
 - Test di integrazione HTTP (supertest + Postgres embedded dedicato, `backend/test/`) — 37 test: auth, gruppi, `resolveGroup`/`requireGroupAdmin`, isolamento multi-tenant, cancellazione account.
 - Paginazione opzionale `GET /api/groups/:slug/games` (retrocompatibile — vedi sopra). `api.getGamesPage()` esiste lato frontend ma **nessuna pagina lo usa ancora**.
-- Link donazioni Ko-fi (`lib/links.js`, footer + pagina Account) — chiudeva l'ultima voce economica in "Prossimi". Primo modo per validare se la community sostiene il progetto prima di investire in ads/IAP.
+- Link donazioni Ko-fi (`lib/links.js`, footer + pagina Account + card chiudibile in cima al Feed con snooze 30gg via `SupportBanner.jsx`) — chiudeva l'ultima voce economica in "Prossimi". Primo modo per validare se la community sostiene il progetto prima di investire in ads/IAP. (Un'icona in navbar era stata provata e scartata: affollava troppo, specie su mobile.)
 
 ### Prossimi
 - Wiring UI della paginazione partite (vedi sopra) — solo se/quando lo storico di un gruppo reale inizia a diventare pesante da caricare tutto insieme.
