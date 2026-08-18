@@ -89,6 +89,40 @@ function IconButton({ onClick, title, children }) {
   )
 }
 
+// Stessa forma di IconButton ma colorata (accent) e come link esterno, non
+// bottone — sempre visibile in navbar apposta, ma resta solo un'icona in
+// più: chi non è interessato la ignora senza sforzo.
+function SupportIcon() {
+  const { t } = useTheme()
+  const [hover, setHover] = useState(false)
+  return (
+    <a
+      href={KOFI_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Sostieni CommanderOne su Ko-fi"
+      aria-label="Sostieni CommanderOne su Ko-fi"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        padding: '6px 12px',
+        border: `1px solid ${t.accent}`,
+        borderRadius: 10,
+        background: hover ? t.accent : 'transparent',
+        cursor: 'pointer',
+        fontSize: 13,
+        lineHeight: 1,
+        color: hover ? '#1a1206' : t.accent,
+        textDecoration: 'none',
+        transition: 'all 0.18s ease',
+        display: 'inline-flex', alignItems: 'center',
+      }}
+    >
+      ☕
+    </a>
+  )
+}
+
 function Brand({ logoSize = 42, titleSize = 14, compact = false }) {
   const { t, dark } = useTheme()
   const { activeGroup } = useGroup()
@@ -279,6 +313,7 @@ function Layout() {
                     border: `1px solid ${t.border}`,
                   })}>Admin</NavLink>
                 )}
+                <SupportIcon />
                 <IconButton onClick={toggleDark} title={dark ? 'Light mode' : 'Dark mode'}>{dark ? '☀' : '🌙'}</IconButton>
                 <IconButton onClick={() => navigate('/account')} title="Account">⚙</IconButton>
                 <UserChip avatar={26} hideLabel />
@@ -302,6 +337,7 @@ function Layout() {
                 <GroupSwitcher />
                 <UserChip />
                 <NotificationBell />
+                <SupportIcon />
                 <IconButton onClick={toggleDark} title={dark ? 'Passa a light mode' : 'Passa a dark mode'}>{dark ? '☀' : '🌙'}</IconButton>
                 <IconButton onClick={() => navigate('/account')} title="Impostazioni account">⚙</IconButton>
                 <IconButton onClick={logout} title="Esci">Esci</IconButton>
