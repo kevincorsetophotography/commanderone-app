@@ -71,7 +71,7 @@ POST /api/groups/:slug/invite-code/regenerate   (admin del gruppo)
 
 ## Roadmap
 
-> Stato aggiornato al 18/08/2026. Le voci "✅ fatto" vivono su branch dedicati non ancora in `main`: `feat/email-verification-password-reset`, `feat/multi-group-switching`, `feat/new-app-icon`, `feat/judge-bot-cost-safety`, `test/http-integration-and-pagination`.
+> Stato aggiornato al 18/08/2026. Le voci "✅ fatto" vivono su branch dedicati non ancora in `main`: `feat/email-verification-password-reset`, `feat/multi-group-switching`, `feat/new-app-icon`, `feat/judge-bot-cost-safety`, `test/http-integration-and-pagination`, `feat/account-deletion` (stacked sull'auth + sul branch dei test: serviva sia `AccountPage.jsx` sia l'infrastruttura supertest).
 
 ### Appena fatto (da mergiare in `main`)
 - ✅ Verifica email, reset password, cambio password self-service (`PATCH /api/auth/password`) — chiudeva la voce storica "Alta priorità".
@@ -81,9 +81,9 @@ POST /api/groups/:slug/invite-code/regenerate   (admin del gruppo)
 - ✅ Judge Bot: modello Groq dismesso (`llama-3.1-8b-instant`, morto il 16/08/2026) sostituito, tetto di costo giornaliero globale (`JUDGE_DAILY_LLM_CAP`, tabella `JudgeLlmUsage`), fallback gratuito senza LLM (oracle text + ruling Scryfall + ricerca locale CR) quando il tetto è esaurito o Groq non risponde.
 - ✅ Test di integrazione HTTP (supertest + Postgres embedded dedicato, `backend/test/`) — chiudeva l'ultima voce storica in "Alta priorità". 29 test: auth, gruppi, `resolveGroup`/`requireGroupAdmin`, e soprattutto l'isolamento multi-tenant (mai testato prima). Richiesto `src/app.js` separato da `src/index.js` (che faceva `app.listen()` al top-level, impossibile da testare così com'era).
 - ✅ Paginazione opzionale `GET /api/groups/:slug/games` — retrocompatibile (senza query params ritorna l'array completo come sempre, 6 pagine su 7 del frontend calcolano statistiche client-side sull'intera lista). Con `?page&pageSize` ritorna `{ games, total, page, pageSize, totalPages }`. `api.getGamesPage()` esiste lato frontend ma **nessuna pagina lo usa ancora** — il wiring UI (infinite scroll vs "carica altre" vs pagine numerate) resta un follow-up di design.
+- ✅ Cancellazione account self-service (GDPR "diritto all'oblio", `DELETE /api/auth/account`) — chiudeva l'altra voce storica in "Prossimi". Non un semplice `DELETE FROM User`: lo storico partite è condiviso con altri giocatori, quindi mazzi/partecipazioni usati in partite reali vengono riassegnati a un utente "fantasma" condiviso (`lib/accountDeletion.js`) invece di sparire e rompere lo storico altrui; solo i mazzi mai scesi in campo si cancellano per davvero. Bloccata se sei l'unico admin di un gruppo con altri membri (non se ne sei l'unico membro in assoluto — in quel caso il gruppo sparisce con te). 8 test di integrazione coprono anche i casi limite (storico condiviso preservato, fantasma condiviso tra più cancellazioni, collisioni sui vincoli `@@unique` quando si riassegna al fantasma).
 
 ### Prossimi (prerequisiti più che feature — bassa complessità, alto impatto, nessuno richiede Capacitor)
-- **Cancellazione account self-service** (GDPR "diritto all'oblio") — oggi non esiste, solo rimozione-da-gruppo fatta da un admin. Non rimandabile ora che l'account ha un'email reale.
 - **Privacy Policy + Termini di Servizio** — zero file nel repo oggi. Bloccante sia per la submission store sia per conformità GDPR.
 - **Donazioni** (Ko-fi/Patreon/Buy Me a Coffee) — spedibile subito, zero rischio legale (vedi vincoli sopra), primo modo per validare se la community sostiene il progetto prima di investire in ads/IAP.
 - Wiring UI della paginazione partite (vedi sopra) — solo se/quando lo storico di un gruppo reale inizia a diventare pesante da caricare tutto insieme.
