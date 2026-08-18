@@ -5,7 +5,7 @@ const prisma = require('../lib/prisma');
 // (snapshot del server: fonte di verità, così il profilo non "perde" quelli non monotoni)
 router.get('/achievements/:userId', async (req, res) => {
   const userId = Number.parseInt(req.params.userId, 10);
-  if (!Number.isInteger(userId)) return res.status(400).json({ error: 'ID non valido' });
+  if (!Number.isInteger(userId)) return res.status(400).json({ error: 'INVALID_ID' });
   try {
     const rows = await prisma.achievementUnlock.findMany({
       where: { userId, groupId: req.group.id },
@@ -14,7 +14,7 @@ router.get('/achievements/:userId', async (req, res) => {
     res.json({ unlocked: rows.map(r => r.achievementId) });
   } catch (error) {
     console.error('get achievements error', error);
-    res.status(500).json({ error: 'Errore durante il caricamento degli achievement' });
+    res.status(500).json({ error: 'ACHIEVEMENTS_LOAD_FAILED' });
   }
 });
 
@@ -49,7 +49,7 @@ router.get('/players', async (req, res) => {
     res.json(stats.sort((a, b) => b.winRate - a.winRate));
   } catch (error) {
     console.error('stats players error', error);
-    res.status(500).json({ error: 'Errore durante il caricamento delle statistiche giocatori' });
+    res.status(500).json({ error: 'PLAYER_STATS_LOAD_FAILED' });
   }
 });
 
@@ -81,7 +81,7 @@ router.get('/decks', async (req, res) => {
     res.json(stats.sort((a, b) => b.winRate - a.winRate));
   } catch (error) {
     console.error('stats decks error', error);
-    res.status(500).json({ error: 'Errore durante il caricamento delle statistiche mazzi' });
+    res.status(500).json({ error: 'DECK_STATS_LOAD_FAILED' });
   }
 });
 
@@ -131,7 +131,7 @@ router.get('/matchups', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('stats matchups error', error);
-    res.status(500).json({ error: 'Errore durante il caricamento dei matchup' });
+    res.status(500).json({ error: 'MATCHUPS_LOAD_FAILED' });
   }
 });
 

@@ -84,13 +84,13 @@ router.get('/members', async (req, res) => {
 // PATCH /api/groups/:slug/admin/members/:userId — cambia il ruolo del membro nel gruppo
 router.patch('/members/:userId', async (req, res) => {
   const userId = parseId(req.params.userId);
-  if (!userId) return res.status(400).json({ error: 'ID utente non valido' });
+  if (!userId) return res.status(400).json({ error: 'INVALID_USER_ID' });
 
   const role = req.body.role === 'ADMIN' || req.body.role === 'PLAYER' ? req.body.role : null;
-  if (!role) return res.status(400).json({ error: 'Ruolo non valido' });
+  if (!role) return res.status(400).json({ error: 'INVALID_ROLE' });
 
   if (req.user.id === userId && role === 'PLAYER') {
-    return res.status(400).json({ error: 'Non puoi rimuovere il ruolo admin dal tuo account attuale' });
+    return res.status(400).json({ error: 'CANNOT_DEMOTE_SELF' });
   }
 
   try {
@@ -100,9 +100,9 @@ router.patch('/members/:userId', async (req, res) => {
     });
     res.json({ userId, role: membership.role });
   } catch (error) {
-    if (error.code === 'P2025') return res.status(404).json({ error: 'Membro non trovato' });
+    if (error.code === 'P2025') return res.status(404).json({ error: 'MEMBER_NOT_FOUND' });
     console.error('admin update member error', error);
-    res.status(500).json({ error: 'Errore durante l\'aggiornamento del membro' });
+    res.status(500).json({ error: 'MEMBER_UPDATE_FAILED' });
   }
 });
 
@@ -110,9 +110,9 @@ router.patch('/members/:userId', async (req, res) => {
 // (l'account resta, le sue partite/mazzi storici del gruppo restano; perde solo l'accesso)
 router.delete('/members/:userId', async (req, res) => {
   const userId = parseId(req.params.userId);
-  if (!userId) return res.status(400).json({ error: 'ID utente non valido' });
+  if (!userId) return res.status(400).json({ error: 'INVALID_USER_ID' });
   if (req.user.id === userId) {
-    return res.status(400).json({ error: 'Non puoi rimuovere te stesso dal gruppo' });
+    return res.status(400).json({ error: 'CANNOT_REMOVE_SELF' });
   }
 
   try {
@@ -121,9 +121,9 @@ router.delete('/members/:userId', async (req, res) => {
     });
     res.json({ ok: true });
   } catch (error) {
-    if (error.code === 'P2025') return res.status(404).json({ error: 'Membro non trovato' });
+    if (error.code === 'P2025') return res.status(404).json({ error: 'MEMBER_NOT_FOUND' });
     console.error('admin remove member error', error);
-    res.status(500).json({ error: 'Errore durante la rimozione del membro' });
+    res.status(500).json({ error: 'MEMBER_REMOVE_FAILED' });
   }
 });
 

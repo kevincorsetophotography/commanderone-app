@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
     res.json(notifications);
   } catch (error) {
     console.error('list notifications error', error);
-    res.status(500).json({ error: 'Errore durante il caricamento delle notifiche' });
+    res.status(500).json({ error: 'NOTIFICATIONS_LOAD_FAILED' });
   }
 });
 
@@ -28,7 +28,7 @@ router.get('/unread-count', async (req, res) => {
     res.json({ count });
   } catch (error) {
     console.error('unread-count error', error);
-    res.status(500).json({ error: 'Errore' });
+    res.status(500).json({ error: 'GENERIC' });
   }
 });
 
@@ -42,7 +42,7 @@ router.post('/read', async (req, res) => {
     res.json({ ok: true });
   } catch (error) {
     console.error('mark read error', error);
-    res.status(500).json({ error: 'Errore' });
+    res.status(500).json({ error: 'GENERIC' });
   }
 });
 

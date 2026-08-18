@@ -79,11 +79,11 @@ const eventDetailInclude = {
 // Normalizza/valida il payload di un evento. Ritorna { error } oppure { data }
 const buildEventData = (body) => {
   const title = typeof body.title === 'string' ? body.title.trim() : '';
-  if (!title) return { error: 'Titolo richiesto' };
-  if (title.length > MAX_TITLE) return { error: `Titolo troppo lungo (max ${MAX_TITLE})` };
+  if (!title) return { error: 'EVENT_TITLE_REQUIRED' };
+  if (title.length > MAX_TITLE) return { error: 'EVENT_TITLE_TOO_LONG', errorParams: { max: MAX_TITLE } };
 
   const startsAt = body.startsAt ? new Date(body.startsAt) : null;
-  if (!startsAt || Number.isNaN(startsAt.getTime())) return { error: 'Data evento non valida' };
+  if (!startsAt || Number.isNaN(startsAt.getTime())) return { error: 'EVENT_DATE_INVALID' };
 
   const description = typeof body.description === 'string' && body.description.trim()
     ? body.description.trim().slice(0, MAX_DESCRIPTION)
@@ -119,16 +119,16 @@ router.get('/', async (req, res) => {
     res.json(events);
   } catch (error) {
     console.error('list events error', error);
-    res.status(500).json({ error: 'Errore durante il caricamento degli eventi' });
+    res.status(500).json({ error: 'EVENTS_LOAD_FAILED' });
   }
 });
 
 // POST /api/groups/:slug/events — crea un evento (solo admin del gruppo)
 router.post('/', async (req, res) => {
-  if (req.membership.role !== 'ADMIN') return res.status(403).json({ error: 'Solo gli admin possono creare eventi' });
+  if (req.membership.role !== 'ADMIN') return res.status(403).json({ error: 'EVENTS_ADMIN_ONLY_CREATE' });
 
-  const { error, data } = buildEventData(req.body);
-  if (error) return res.status(400).json({ error });
+  const { error, errorParams, data } = buildEventData(req.body);
+  if (error) return res.status(400).json({ error, ...errorParams });
 
   try {
     const event = await prisma.event.create({
@@ -148,26 +148,26 @@ router.post('/', async (req, res) => {
     res.json(event);
   } catch (error) {
     console.error('create event error', error);
-    res.status(500).json({ error: 'Errore durante la creazione dell\'evento' });
+    res.status(500).json({ error: 'EVENT_CREATE_FAILED' });
   }
 });
 
 // PATCH /api/groups/:slug/events/:id — modifica un evento (solo admin del gruppo)
 router.patch('/:id', async (req, res) => {
-  if (req.membership.role !== 'ADMIN') return res.status(403).json({ error: 'Solo gli admin possono modificare eventi' });
+  if (req.membership.role !== 'ADMIN') return res.status(403).json({ error: 'EVENTS_ADMIN_ONLY_UPDATE' });
 
   const eventId = parseEventId(req.params.id);
-  if (!eventId) return res.status(400).json({ error: 'ID evento non valido' });
+  if (!eventId) return res.status(400).json({ error: 'INVALID_EVENT_ID' });
 
-  const { error, data } = buildEventData(req.body);
-  if (error) return res.status(400).json({ error });
+  const { error, errorParams, data } = buildEventData(req.body);
+  if (error) return res.status(400).json({ error, ...errorParams });
 
   try {
     const existing = await prisma.event.findUnique({
       where: { id: eventId },
       select: { id: true, groupId: true, _count: { select: { rounds: true } } },
     });
-    if (!existing || existing.groupId !== req.group.id) return res.status(404).json({ error: 'Evento non trovato' });
+    if (!existing || existing.groupId !== req.group.id) return res.status(404).json({ error: 'EVENT_NOT_FOUND' });
     // Formato bloccato una volta che il torneo è iniziato
     if (existing._count.rounds > 0) { delete data.format; delete data.bestOf; }
 
@@ -179,37 +179,37 @@ router.patch('/:id', async (req, res) => {
     res.json(event);
   } catch (error) {
     console.error('update event error', error);
-    res.status(500).json({ error: 'Errore durante l\'aggiornamento dell\'evento' });
+    res.status(500).json({ error: 'EVENT_UPDATE_FAILED' });
   }
 });
 
 // DELETE /api/groups/:slug/events/:id — elimina un evento (solo admin del gruppo)
 router.delete('/:id', async (req, res) => {
-  if (req.membership.role !== 'ADMIN') return res.status(403).json({ error: 'Solo gli admin possono eliminare eventi' });
+  if (req.membership.role !== 'ADMIN') return res.status(403).json({ error: 'EVENTS_ADMIN_ONLY_DELETE' });
 
   const eventId = parseEventId(req.params.id);
-  if (!eventId) return res.status(400).json({ error: 'ID evento non valido' });
+  if (!eventId) return res.status(400).json({ error: 'INVALID_EVENT_ID' });
 
   try {
     const existing = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true, groupId: true } });
-    if (!existing || existing.groupId !== req.group.id) return res.status(404).json({ error: 'Evento non trovato' });
+    if (!existing || existing.groupId !== req.group.id) return res.status(404).json({ error: 'EVENT_NOT_FOUND' });
 
     await prisma.event.delete({ where: { id: eventId } });
     res.json({ ok: true });
   } catch (error) {
     console.error('delete event error', error);
-    res.status(500).json({ error: 'Errore durante l\'eliminazione dell\'evento' });
+    res.status(500).json({ error: 'EVENT_DELETE_FAILED' });
   }
 });
 
 // POST /api/groups/:slug/events/:id/rsvp — toggle "ci sono" dell'utente corrente
 router.post('/:id/rsvp', async (req, res) => {
   const eventId = parseEventId(req.params.id);
-  if (!eventId) return res.status(400).json({ error: 'ID evento non valido' });
+  if (!eventId) return res.status(400).json({ error: 'INVALID_EVENT_ID' });
 
   try {
     const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true, groupId: true } });
-    if (!event || event.groupId !== req.group.id) return res.status(404).json({ error: 'Evento non trovato' });
+    if (!event || event.groupId !== req.group.id) return res.status(404).json({ error: 'EVENT_NOT_FOUND' });
 
     const existing = await prisma.eventRsvp.findUnique({
       where: { eventId_userId: { eventId, userId: req.user.id } }
@@ -227,7 +227,7 @@ router.post('/:id/rsvp', async (req, res) => {
     res.json({ rsvps });
   } catch (error) {
     console.error('toggle rsvp error', error);
-    res.status(500).json({ error: 'Errore durante l\'adesione' });
+    res.status(500).json({ error: 'RSVP_FAILED' });
   }
 });
 
@@ -236,37 +236,37 @@ router.post('/:id/rsvp', async (req, res) => {
 // GET /api/groups/:slug/events/:id — dettaglio evento con turni, tavoli e posti
 router.get('/:id', async (req, res) => {
   const eventId = parseEventId(req.params.id);
-  if (!eventId) return res.status(400).json({ error: 'ID evento non valido' });
+  if (!eventId) return res.status(400).json({ error: 'INVALID_EVENT_ID' });
   try {
     const event = await prisma.event.findUnique({ where: { id: eventId }, include: eventDetailInclude });
-    if (!event || event.groupId !== req.group.id) return res.status(404).json({ error: 'Evento non trovato' });
+    if (!event || event.groupId !== req.group.id) return res.status(404).json({ error: 'EVENT_NOT_FOUND' });
     res.json(withStandings(event));
   } catch (error) {
     console.error('get event error', error);
-    res.status(500).json({ error: 'Errore durante il caricamento dell\'evento' });
+    res.status(500).json({ error: 'EVENT_LOAD_FAILED' });
   }
 });
 
 // POST /api/groups/:slug/events/:id/rounds — genera il turno successivo (solo admin del gruppo)
 router.post('/:id/rounds', async (req, res) => {
-  if (req.membership.role !== 'ADMIN') return res.status(403).json({ error: 'Solo gli admin possono generare i turni' });
+  if (req.membership.role !== 'ADMIN') return res.status(403).json({ error: 'EVENTS_ADMIN_ONLY_ROUNDS' });
   const eventId = parseEventId(req.params.id);
-  if (!eventId) return res.status(400).json({ error: 'ID evento non valido' });
+  if (!eventId) return res.status(400).json({ error: 'INVALID_EVENT_ID' });
 
   try {
     const event = await prisma.event.findUnique({ where: { id: eventId }, include: eventDetailInclude });
-    if (!event || event.groupId !== req.group.id) return res.status(404).json({ error: 'Evento non trovato' });
-    if (!event.format) return res.status(400).json({ error: 'Imposta prima il formato dell\'evento' });
+    if (!event || event.groupId !== req.group.id) return res.status(404).json({ error: 'EVENT_NOT_FOUND' });
+    if (!event.format) return res.status(400).json({ error: 'EVENT_FORMAT_REQUIRED' });
 
     const rounds = event.rounds;
     const last = rounds[rounds.length - 1] || null;
 
     if (last) {
       if (!last.tables.every(t => t.done)) {
-        return res.status(400).json({ error: 'Completa tutti i risultati del turno prima di generarne uno nuovo' });
+        return res.status(400).json({ error: 'ROUND_NOT_COMPLETE' });
       }
       if (event.format === '1v1' && rounds.length >= MAX_ROUNDS_1V1) {
-        return res.status(400).json({ error: `Massimo ${MAX_ROUNDS_1V1} turni` });
+        return res.status(400).json({ error: 'MAX_ROUNDS_REACHED', max: MAX_ROUNDS_1V1 });
       }
     }
 
@@ -276,7 +276,7 @@ router.post('/:id/rounds', async (req, res) => {
     let ids = seated.size ? [...seated] : (await prisma.eventRsvp.findMany({ where: { eventId }, select: { userId: true } })).map(r => r.userId);
 
     const min = event.format === '1v1' ? 2 : 3;
-    if (ids.length < min) return res.status(400).json({ error: `Servono almeno ${min} iscritti` });
+    if (ids.length < min) return res.status(400).json({ error: 'NOT_ENOUGH_PLAYERS', min });
 
     let tables;
     if (event.format === 'multiplayer') {
@@ -303,14 +303,14 @@ router.post('/:id/rounds', async (req, res) => {
     res.json(withStandings(full));
   } catch (error) {
     console.error('generate round error', error);
-    res.status(500).json({ error: 'Errore durante la generazione del turno' });
+    res.status(500).json({ error: 'ROUND_GENERATE_FAILED' });
   }
 });
 
 // POST /api/groups/:slug/events/:eventId/tables/:tableId/result — risultato 1v1 (giocatore o admin)
 router.post('/:eventId/tables/:tableId/result', async (req, res) => {
   const tableId = Number.parseInt(req.params.tableId, 10);
-  if (!Number.isInteger(tableId)) return res.status(400).json({ error: 'ID tavolo non valido' });
+  if (!Number.isInteger(tableId)) return res.status(400).json({ error: 'INVALID_TABLE_ID' });
 
   try {
     const table = await prisma.eventTable.findUnique({
@@ -320,39 +320,39 @@ router.post('/:eventId/tables/:tableId/result', async (req, res) => {
         round: { select: { event: { select: { id: true, groupId: true, format: true, bestOf: true } } } },
       },
     });
-    if (!table || table.round.event.groupId !== req.group.id) return res.status(404).json({ error: 'Tavolo non trovato' });
+    if (!table || table.round.event.groupId !== req.group.id) return res.status(404).json({ error: 'TABLE_NOT_FOUND' });
     const event = table.round.event;
 
     const isParticipant = table.seats.some(s => s.userId === req.user.id);
     if (req.membership.role !== 'ADMIN' && !isParticipant) {
-      return res.status(403).json({ error: 'Solo i giocatori del tavolo o un admin possono inserire il risultato' });
+      return res.status(403).json({ error: 'TABLE_RESULT_FORBIDDEN' });
     }
 
     // Multiplayer: il risultato è una partita registrata (conta nelle statistiche)
     if (event.format === 'multiplayer') {
       const gameId = Number.parseInt(req.body.gameId, 10);
-      if (!Number.isInteger(gameId)) return res.status(400).json({ error: 'Partita non valida' });
+      if (!Number.isInteger(gameId)) return res.status(400).json({ error: 'INVALID_GAME_ID' });
       const game = await prisma.game.findUnique({ where: { id: gameId }, select: { id: true, groupId: true, players: { select: { userId: true } } } });
-      if (!game || game.groupId !== req.group.id) return res.status(404).json({ error: 'Partita non trovata' });
+      if (!game || game.groupId !== req.group.id) return res.status(404).json({ error: 'GAME_NOT_FOUND' });
       const podIds = new Set(table.seats.map(s => s.userId));
       const gameIds = new Set(game.players.map(p => p.userId));
       if (podIds.size !== gameIds.size || [...podIds].some(id => !gameIds.has(id))) {
-        return res.status(400).json({ error: 'I giocatori della partita non coincidono col tavolo' });
+        return res.status(400).json({ error: 'TABLE_GAME_MISMATCH' });
       }
       await prisma.eventTable.update({ where: { id: tableId }, data: { gameId, done: true } });
       const full = await prisma.event.findUnique({ where: { id: event.id }, include: eventDetailInclude });
       return res.json(withStandings(full));
     }
 
-    if (table.seats.length !== 2) return res.status(400).json({ error: 'Tavolo non valido per 1v1' });
+    if (table.seats.length !== 2) return res.status(400).json({ error: 'TABLE_INVALID_FOR_1V1' });
 
     const bestOf = event.bestOf || 1;
     const scoreA = Number.parseInt(req.body.scoreA, 10);
     const scoreB = Number.parseInt(req.body.scoreB, 10);
     if (!Number.isInteger(scoreA) || !Number.isInteger(scoreB) || scoreA < 0 || scoreB < 0 || scoreA > bestOf || scoreB > bestOf) {
-      return res.status(400).json({ error: `Punteggio non valido (0–${bestOf})` });
+      return res.status(400).json({ error: 'INVALID_SCORE', max: bestOf });
     }
-    if (scoreA + scoreB < 1) return res.status(400).json({ error: 'Inserisci il risultato' });
+    if (scoreA + scoreB < 1) return res.status(400).json({ error: 'RESULT_REQUIRED' });
 
     const a = (table.seats.find(s => s.seat === 0) || table.seats[0]).userId;
     const b = (table.seats.find(s => s.seat === 1) || table.seats[1]).userId;
@@ -368,24 +368,24 @@ router.post('/:eventId/tables/:tableId/result', async (req, res) => {
     res.json(withStandings(full));
   } catch (error) {
     console.error('table result error', error);
-    res.status(500).json({ error: 'Errore durante il salvataggio del risultato' });
+    res.status(500).json({ error: 'RESULT_SAVE_FAILED' });
   }
 });
 
 // DELETE /api/groups/:slug/events/:eventId/rounds/:roundId — elimina un turno (solo admin del gruppo)
 router.delete('/:eventId/rounds/:roundId', async (req, res) => {
-  if (req.membership.role !== 'ADMIN') return res.status(403).json({ error: 'Solo gli admin possono eliminare i turni' });
+  if (req.membership.role !== 'ADMIN') return res.status(403).json({ error: 'EVENTS_ADMIN_ONLY_ROUND_DELETE' });
   const roundId = Number.parseInt(req.params.roundId, 10);
-  if (!Number.isInteger(roundId)) return res.status(400).json({ error: 'ID turno non valido' });
+  if (!Number.isInteger(roundId)) return res.status(400).json({ error: 'INVALID_ROUND_ID' });
   try {
     const round = await prisma.eventRound.findUnique({ where: { id: roundId }, select: { id: true, event: { select: { groupId: true } } } });
-    if (!round || round.event.groupId !== req.group.id) return res.status(404).json({ error: 'Turno non trovato' });
+    if (!round || round.event.groupId !== req.group.id) return res.status(404).json({ error: 'ROUND_NOT_FOUND' });
 
     await prisma.eventRound.delete({ where: { id: roundId } });
     res.json({ ok: true });
   } catch (error) {
     console.error('delete round error', error);
-    res.status(500).json({ error: 'Errore durante l\'eliminazione del turno' });
+    res.status(500).json({ error: 'ROUND_DELETE_FAILED' });
   }
 });
 
