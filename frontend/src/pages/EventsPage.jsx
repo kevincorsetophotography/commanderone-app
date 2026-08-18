@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../hooks/useAuth'
@@ -7,19 +8,18 @@ import { useGroup } from '../hooks/useGroup'
 import { useFeedback } from '../hooks/useFeedback'
 import EmptyState from '../components/EmptyState'
 
-const MONTHS = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic']
 const pad = (n) => String(n).padStart(2, '0')
 
 const startOfDay = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
 const dayDiff = (a, b) => Math.round((startOfDay(a) - startOfDay(b)) / 86400000)
 
-function countdown(startsAt) {
+function countdown(startsAt, tr) {
   const d = dayDiff(startsAt, new Date())
-  if (d === 0) return 'Oggi'
-  if (d === 1) return 'Domani'
-  if (d === -1) return 'Ieri'
-  if (d > 1 && d <= 21) return `tra ${d} giorni`
-  if (d < -1 && d >= -21) return `${-d} giorni fa`
+  if (d === 0) return tr('feed.today')
+  if (d === 1) return tr('gioca.tomorrow')
+  if (d === -1) return tr('feed.yesterday')
+  if (d > 1 && d <= 21) return tr('gioca.inDays', { count: d })
+  if (d < -1 && d >= -21) return tr('eventsPage.daysAgo', { count: -d })
   return null
 }
 
@@ -46,6 +46,8 @@ const EMPTY = { title: '', date: '', time: '', location: '', description: '', fo
 
 export default function EventsPage() {
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const { user } = useAuth()
   const { activeGroup } = useGroup()
   const { toast, confirm } = useFeedback()
@@ -83,7 +85,7 @@ export default function EventsPage() {
 
   const load = async () => {
     try { setEvents(await api.getEvents()) }
-    catch { toast('Errore nel caricamento eventi', 'error') }
+    catch { toast(tr('eventsPage.loadError'), 'error') }
     finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -119,8 +121,8 @@ export default function EventsPage() {
 
   const submit = async (e) => {
     e.preventDefault()
-    if (!form.title.trim()) { setFormError('Il titolo è obbligatorio'); return }
-    if (!form.date) { setFormError('La data è obbligatoria'); return }
+    if (!form.title.trim()) { setFormError(tr('eventsPage.titleRequired')); return }
+    if (!form.date) { setFormError(tr('eventsPage.dateRequired')); return }
     const allDay = !form.time
     const startsAt = new Date(`${form.date}T${form.time || '00:00'}`).toISOString()
     const payload = {
@@ -134,20 +136,20 @@ export default function EventsPage() {
     }
     setSaving(true); setFormError('')
     try {
-      if (editingId) { await api.updateEvent(editingId, payload); toast('Evento aggiornato', 'success') }
-      else { await api.createEvent(payload); toast('Evento creato', 'success') }
+      if (editingId) { await api.updateEvent(editingId, payload); toast(tr('eventsPage.updated'), 'success') }
+      else { await api.createEvent(payload); toast(tr('eventsPage.created'), 'success') }
       resetForm()
       await load()
     } catch (err) {
-      setFormError(err.error || 'Errore nel salvataggio')
+      setFormError(err.error || tr('eventsPage.saveError'))
     } finally { setSaving(false) }
   }
 
   const removeEvent = async (ev) => {
-    const ok = await confirm({ title: 'Eliminare l\'evento?', message: `"${ev.title}" verrà rimosso.`, confirmLabel: 'Elimina', danger: true })
+    const ok = await confirm({ title: tr('eventsPage.confirmDeleteTitle'), message: tr('eventsPage.confirmDeleteMessage', { title: ev.title }), confirmLabel: tr('common.delete'), danger: true })
     if (!ok) return
-    try { await api.deleteEvent(ev.id); await load(); toast('Evento eliminato', 'success') }
-    catch (err) { toast(err.error || 'Errore eliminazione', 'error') }
+    try { await api.deleteEvent(ev.id); await load(); toast(tr('eventsPage.deleted'), 'success') }
+    catch (err) { toast(err.error || tr('eventsPage.deleteError'), 'error') }
   }
 
   const toggleRsvp = async (ev) => {
@@ -155,7 +157,7 @@ export default function EventsPage() {
       const { rsvps } = await api.toggleRsvp(ev.id)
       setEvents(prev => prev.map(e => e.id === ev.id ? { ...e, rsvps } : e))
     } catch (err) {
-      toast(err.error || 'Errore adesione', 'error')
+      toast(err.error || tr('eventsPage.rsvpError'), 'error')
     }
   }
 
@@ -169,12 +171,13 @@ export default function EventsPage() {
 
   const renderEvent = (ev, faded = false, idx = 0) => {
     const d = new Date(ev.startsAt)
-    const cd = countdown(ev.startsAt)
+    const cd = countdown(ev.startsAt, tr)
     const going = ev.rsvps?.some(r => r.userId === user?.id)
     const n = ev.rsvps?.length || 0
     const names = (ev.rsvps || []).map(r => r.user?.username).filter(Boolean)
-    const dateLine = d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })
-    const time = ev.allDay ? null : d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+    const dateLine = d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })
+    const time = ev.allDay ? null : d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    const monthAbbr = d.toLocaleDateString(locale, { month: 'short' }).replace('.', '')
 
     return (
       <div key={ev.id} id={`evento-${ev.id}`} className="ct-fade-up" style={{
@@ -188,7 +191,7 @@ export default function EventsPage() {
           {/* Badge data */}
           <div style={{ flexShrink: 0, width: 58, textAlign: 'center', background: t.bgMuted, borderRadius: 12, padding: '8px 0', border: `0.5px solid ${t.border}` }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: faded ? t.textSub : t.primary, lineHeight: 1 }}>{d.getDate()}</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: t.textMuted, textTransform: 'uppercase', marginTop: 2 }}>{MONTHS[d.getMonth()]}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: t.textMuted, textTransform: 'uppercase', marginTop: 2 }}>{monthAbbr}</div>
           </div>
 
           {/* Corpo */}
@@ -196,7 +199,7 @@ export default function EventsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span
                 onClick={() => navigate(`/evento/${ev.id}`)}
-                title="Apri l'evento"
+                title={tr('eventsPage.openEvent')}
                 style={{ fontSize: 16, fontWeight: 700, color: t.text, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}
               >
                 {ev.title}<span style={{ color: t.primary }}>›</span>
@@ -228,16 +231,16 @@ export default function EventsPage() {
                   color: going ? t.primaryFg : t.textSub,
                 }}
               >
-                {going ? '✓ Ci sono' : 'Ci sono'}
+                {going ? tr('eventsPage.going') : tr('eventsPage.rsvpCta')}
               </button>
               <span style={{ fontSize: 12, color: t.textMuted }} title={names.join(', ')}>
-                {n === 0 ? 'Nessun partecipante' : `${n} partecipant${n === 1 ? 'e' : 'i'}${names.length ? ': ' + names.join(', ') : ''}`}
+                {n === 0 ? tr('eventsPage.noParticipants') : `${tr('eventsPage.participantsCount', { count: n })}${names.length ? ': ' + names.join(', ') : ''}`}
               </span>
 
               {isAdmin && (
                 <span style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
-                  <button style={btnSmall} onClick={() => startEdit(ev)}>Modifica</button>
-                  <button style={btnDanger} onClick={() => removeEvent(ev)}>Elimina</button>
+                  <button style={btnSmall} onClick={() => startEdit(ev)}>{tr('common.edit')}</button>
+                  <button style={btnDanger} onClick={() => removeEvent(ev)}>{tr('common.delete')}</button>
                 </span>
               )}
             </div>
@@ -250,9 +253,9 @@ export default function EventsPage() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 18, fontWeight: 600, color: t.text }}>Eventi</div>
+        <div style={{ fontSize: 18, fontWeight: 600, color: t.text }}>{tr('eventsPage.title')}</div>
         {isAdmin && (
-          <button style={btnPrimary} onClick={startCreate}>+ Nuovo evento</button>
+          <button style={btnPrimary} onClick={startCreate}>{tr('eventsPage.newEvent')}</button>
         )}
       </div>
 
@@ -264,34 +267,34 @@ export default function EventsPage() {
         >
           <div className="ct-modal-in" style={{ ...glass, borderRadius: 18, padding: '1.35rem 1.5rem', width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: t.text }}>{editingId ? 'Modifica evento' : 'Nuovo evento'}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: t.text }}>{editingId ? tr('eventsPage.editEventTitle') : tr('eventsPage.newEventTitle')}</div>
               <button onClick={resetForm} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: t.textMuted, lineHeight: 1, padding: '0 4px' }}>×</button>
             </div>
             <form onSubmit={submit}>
-              <input style={{ ...inputSt, marginBottom: 10 }} placeholder="Titolo *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} maxLength={120} />
+              <input style={{ ...inputSt, marginBottom: 10 }} placeholder={tr('eventsPage.titlePlaceholder')} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} maxLength={120} />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div>
-                  <label style={{ fontSize: 12, color: t.textSub, display: 'block', marginBottom: 4 }}>Data *</label>
+                  <label style={{ fontSize: 12, color: t.textSub, display: 'block', marginBottom: 4 }}>{tr('eventsPage.dateLabel')}</label>
                   <input type="date" style={inputSt} value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, color: t.textSub, display: 'block', marginBottom: 4 }}>Ora (opzionale)</label>
+                  <label style={{ fontSize: 12, color: t.textSub, display: 'block', marginBottom: 4 }}>{tr('eventsPage.timeLabel')}</label>
                   <input type="time" style={inputSt} value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
                 </div>
               </div>
-              <input style={{ ...inputSt, marginBottom: 10 }} placeholder="Luogo (opzionale)" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} maxLength={160} />
+              <input style={{ ...inputSt, marginBottom: 10 }} placeholder={tr('eventsPage.locationPlaceholder')} value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} maxLength={160} />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div>
-                  <label style={{ fontSize: 12, color: t.textSub, display: 'block', marginBottom: 4 }}>Formato torneo</label>
+                  <label style={{ fontSize: 12, color: t.textSub, display: 'block', marginBottom: 4 }}>{tr('eventsPage.formatLabel')}</label>
                   <select style={inputSt} value={form.format} onChange={e => setForm(f => ({ ...f, format: e.target.value }))}>
-                    <option value="">— Nessuno (solo evento)</option>
-                    <option value="multiplayer">Multiplayer (pod Commander)</option>
-                    <option value="1v1">1v1 (svizzera)</option>
+                    <option value="">{tr('eventsPage.formatNone')}</option>
+                    <option value="multiplayer">{tr('eventsPage.formatMultiplayer')}</option>
+                    <option value="1v1">{tr('eventsPage.format1v1')}</option>
                   </select>
                 </div>
                 {form.format === '1v1' && (
                   <div>
-                    <label style={{ fontSize: 12, color: t.textSub, display: 'block', marginBottom: 4 }}>Match</label>
+                    <label style={{ fontSize: 12, color: t.textSub, display: 'block', marginBottom: 4 }}>{tr('eventsPage.matchLabel')}</label>
                     <select style={inputSt} value={form.bestOf} onChange={e => setForm(f => ({ ...f, bestOf: e.target.value }))}>
                       <option value="1">Best of 1</option>
                       <option value="3">Best of 3</option>
@@ -299,11 +302,11 @@ export default function EventsPage() {
                   </div>
                 )}
               </div>
-              <textarea style={{ ...inputSt, marginBottom: 12, minHeight: 70, resize: 'vertical', fontFamily: 'inherit' }} placeholder="Descrizione (opzionale)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} maxLength={2000} />
+              <textarea style={{ ...inputSt, marginBottom: 12, minHeight: 70, resize: 'vertical', fontFamily: 'inherit' }} placeholder={tr('eventsPage.descriptionPlaceholder')} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} maxLength={2000} />
               {formError && <div style={{ color: t.danger, fontSize: 13, marginBottom: 10 }}>{formError}</div>}
               <div style={{ display: 'flex', gap: 8 }}>
-                <button type="submit" style={btnPrimary} disabled={saving}>{editingId ? 'Salva modifiche' : 'Crea evento'}</button>
-                <button type="button" style={btnGhost} onClick={resetForm}>Annulla</button>
+                <button type="submit" style={btnPrimary} disabled={saving}>{editingId ? tr('eventsPage.saveChanges') : tr('eventsPage.create')}</button>
+                <button type="button" style={btnGhost} onClick={resetForm}>{tr('common.cancel')}</button>
               </div>
             </form>
           </div>
@@ -311,20 +314,20 @@ export default function EventsPage() {
       )}
 
       {loading ? (
-        <div style={{ fontSize: 14, color: t.textSub }}>Caricamento…</div>
+        <div style={{ fontSize: 14, color: t.textSub }}>{tr('common.loading')}</div>
       ) : events.length === 0 ? (
-        <EmptyState icon="📅" title="Nessun evento" message={isAdmin ? 'Crea il primo evento con "+ Nuovo evento".' : 'Gli admin non hanno ancora pubblicato eventi.'} />
+        <EmptyState icon="📅" title={tr('eventsPage.emptyTitle')} message={isAdmin ? tr('eventsPage.emptyAdminMessage') : tr('eventsPage.emptyMemberMessage')} />
       ) : (
         <>
           {upcoming.length > 0 && (
             <>
-              <div style={{ fontSize: 13, fontWeight: 700, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '4px 0 10px' }}>Prossimi</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '4px 0 10px' }}>{tr('eventsPage.upcoming')}</div>
               {upcoming.map((ev, i) => renderEvent(ev, false, i))}
             </>
           )}
           {past.length > 0 && (
             <>
-              <div style={{ fontSize: 13, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '18px 0 10px' }}>Passati</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '18px 0 10px' }}>{tr('eventsPage.past')}</div>
               {past.map((ev, i) => renderEvent(ev, true, i))}
             </>
           )}
