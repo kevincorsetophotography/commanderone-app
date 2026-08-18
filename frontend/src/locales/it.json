@@ -24,7 +24,28 @@
       "termsLink": "Termini di Servizio",
       "privacyLink": "Privacy Policy"
     },
-    "fanContentDisclaimer": "CommanderOne è Fan Content non ufficiale, permesso dalla Fan Content Policy di Wizards of the Coast. Non approvato/sostenuto da Wizards."
+    "fanContentDisclaimer": "CommanderOne è Fan Content non ufficiale, permesso dalla Fan Content Policy di Wizards of the Coast. Non approvato/sostenuto da Wizards.",
+    "verify": {
+      "missingToken": "Link incompleto: manca il token.",
+      "working": "Verifica in corso…",
+      "successTitle": "Email verificata!",
+      "successBody": "Il tuo indirizzo è confermato. Ora puoi usare il recupero password se ti servirà.",
+      "goToApp": "Vai all'app",
+      "errorTitle": "Verifica non riuscita",
+      "retryLink": "Richiedi una nuova email di verifica dalla pagina Account →"
+    },
+    "reset": {
+      "mismatch": "Le password non coincidono",
+      "newPasswordTitle": "Nuova password",
+      "requestTitle": "Recupera password",
+      "newPasswordSubtitle": "Scegli la nuova password per il tuo account.",
+      "requestSubtitle": "Inserisci la tua email: ti mandiamo un link per reimpostare la password.",
+      "sentMessage": "📬 Se l'indirizzo è associato a un account, riceverai un'email con il link di reset entro pochi minuti. Controlla anche lo spam.",
+      "newPasswordPlaceholder": "Nuova password (min 8 caratteri)",
+      "submitNew": "Imposta password",
+      "submitRequest": "Invia link di reset",
+      "backToLogin": "← Torna al login"
+    }
   },
   "onboarding": {
     "welcome": "Benvenuto!",
