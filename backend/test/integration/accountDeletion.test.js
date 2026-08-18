@@ -46,7 +46,8 @@ describe('DELETE /api/auth/account', () => {
 
     const res = await request(app).delete('/api/auth/account').set('Authorization', `Bearer ${owner.token}`).send({ password: PASSWORD });
     expect(res.status).toBe(409);
-    expect(res.body.error).toContain(group.name);
+    expect(res.body.error).toBe('SOLE_ADMIN_BLOCKED');
+    expect(res.body.groupNames).toContain(group.name);
 
     // Niente è stato toccato: l'owner esiste ancora e il gruppo pure.
     const login = await request(app).post('/api/auth/login').send({ username: owner.username, password: PASSWORD });

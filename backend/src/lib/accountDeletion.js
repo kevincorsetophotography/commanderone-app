@@ -55,23 +55,28 @@ async function findBlockingGroups(prisma, userId) {
   return blocking;
 }
 
-class BlockedError extends Error {}
+// Il messaggio non è più costruito qui in italiano: portiamo solo il codice
+// più i nomi dei gruppi come dato strutturato, il frontend costruisce la
+// frase tradotta interpolandoli (vedi frontend/src/lib/apiError.js).
+class BlockedError extends Error {
+  constructor(groupNames) {
+    super('SOLE_ADMIN_BLOCKED');
+    this.groupNames = groupNames;
+  }
+}
 
-// Esegue la cancellazione vera e propria. Ritorna { error } se bloccata
-// (nessuna modifica al DB in quel caso — la transazione va in rollback),
-// altrimenti { ok: true }. Il controllo "unico admin" è dentro la stessa
-// transazione della cancellazione (non una pre-verifica separata) apposta:
-// altrimenti una membership cambiata tra la verifica e la scrittura
+// Esegue la cancellazione vera e propria. Ritorna { error, groupNames? } se
+// bloccata (nessuna modifica al DB in quel caso — la transazione va in
+// rollback), altrimenti { ok: true }. Il controllo "unico admin" è dentro la
+// stessa transazione della cancellazione (non una pre-verifica separata)
+// apposta: altrimenti una membership cambiata tra la verifica e la scrittura
 // potrebbe lasciare un gruppo senza nessun admin.
 async function deleteAccount(prisma, userId) {
   try {
     await prisma.$transaction(async (tx) => {
       const blockingGroups = await findBlockingGroups(tx, userId);
       if (blockingGroups.length > 0) {
-        throw new BlockedError(
-          `Sei l'unico amministratore di ${blockingGroups.length === 1 ? 'questo gruppo' : 'questi gruppi'} ` +
-          `(${blockingGroups.join(', ')}): promuovi un altro membro ad admin prima di eliminare l'account.`
-        );
+        throw new BlockedError(blockingGroups);
       }
 
       // Gruppi di cui l'utente è l'unico membro: cancellati per intero insieme
@@ -131,7 +136,7 @@ async function deleteAccount(prisma, userId) {
       await tx.user.delete({ where: { id: userId } });
     });
   } catch (err) {
-    if (err instanceof BlockedError) return { error: err.message };
+    if (err instanceof BlockedError) return { error: err.message, groupNames: err.groupNames };
     throw err;
   }
 

@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { useGroup } from '../hooks/useGroup'
 import { useTheme } from '../hooks/useTheme'
 import GroupJoinCreateForm from '../components/GroupJoinCreateForm'
 import { KOFI_URL } from '../lib/links'
+import { translateApiError } from '../lib/apiError'
+
+const LANGUAGES = [
+  { code: 'it', label: 'Italiano' },
+  { code: 'en', label: 'English' },
+]
 
 // Impostazioni account: email + stato verifica, cambio password, gruppi, logout.
 export default function AccountPage() {
   const { logout, updateToken } = useAuth()
   const { groups, activeGroup, selectGroup } = useGroup()
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
   const [me, setMe] = useState(null)
   const [addingGroup, setAddingGroup] = useState(false)
   const [joinedMsg, setJoinedMsg] = useState('')
@@ -47,7 +55,7 @@ export default function AccountPage() {
   const changePw = async (e) => {
     e.preventDefault()
     setPwError(''); setPwOk(false)
-    if (next !== confirm) { setPwError('Le nuove password non coincidono'); return }
+    if (next !== confirm) { setPwError(tr('account.password.mismatch')); return }
     setPwLoading(true)
     try {
       const res = await api.changePassword(current, next)
@@ -56,7 +64,7 @@ export default function AccountPage() {
       setPwOk(true)
       setCurrent(''); setNext(''); setConfirm('')
     } catch (err) {
-      setPwError(err.error || 'Errore di connessione')
+      setPwError(translateApiError(err, tr))
     } finally {
       setPwLoading(false)
     }
@@ -80,51 +88,74 @@ export default function AccountPage() {
       await api.deleteAccount(deletePw)
       logout()
     } catch (err) {
-      setDeleteError(err.error || 'Errore di connessione')
+      setDeleteError(translateApiError(err, tr))
       setDeleteLoading(false)
     }
   }
 
+  const dateLocale = i18n.language === 'en' ? 'en-US' : 'it-IT'
+
   return (
     <div className="ct-fade-up" style={{ maxWidth: 560, margin: '0 auto' }}>
-      <h2 style={{ margin: '0 0 16px', fontSize: 22 }}>Account</h2>
+      <h2 style={{ margin: '0 0 16px', fontSize: 22 }}>{tr('account.title')}</h2>
 
       <div style={card}>
-        <div style={label}>Profilo</div>
+        <div style={label}>{tr('account.profile.label')}</div>
         <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{me?.username || '…'}</div>
         <div style={{ fontSize: 13, color: t.textSub, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span>{me?.email || 'Nessuna email associata'}</span>
+          <span>{me?.email || tr('account.profile.noEmail')}</span>
           {me?.email && (me.emailVerifiedAt ? (
-            <span style={{ fontSize: 11, fontWeight: 700, color: t.win, background: t.winBg, padding: '2px 8px', borderRadius: 999 }}>✓ verificata</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: t.win, background: t.winBg, padding: '2px 8px', borderRadius: 999 }}>✓ {tr('account.profile.verified')}</span>
           ) : (
-            <span style={{ fontSize: 11, fontWeight: 700, color: t.danger, background: t.dangerBg || 'transparent', padding: '2px 8px', borderRadius: 999, border: `1px solid ${t.border}` }}>da verificare</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: t.danger, background: t.dangerBg || 'transparent', padding: '2px 8px', borderRadius: 999, border: `1px solid ${t.border}` }}>{tr('account.profile.unverified')}</span>
           ))}
         </div>
         {me?.email && !me.emailVerifiedAt && (
           <div style={{ marginTop: 10, fontSize: 13 }}>
             {resendState === 'sent' ? (
-              <span style={{ color: t.textSub }}>📬 Email inviata, controlla la casella (anche lo spam).</span>
+              <span style={{ color: t.textSub }}>{tr('account.profile.emailSent')}</span>
             ) : resendState === 'error' ? (
-              <span style={{ color: t.danger }}>Invio fallito, riprova più tardi.</span>
+              <span style={{ color: t.danger }}>{tr('account.profile.sendFailed')}</span>
             ) : (
               <button onClick={resend} disabled={resendState === 'sending'} style={{
                 padding: '8px 14px', borderRadius: 10, border: `1px solid ${t.border}`,
                 background: t.bgSurfaceAlt, color: t.text, fontSize: 13, fontWeight: 600, cursor: 'pointer',
               }}>
-                {resendState === 'sending' ? 'Invio…' : 'Rimanda email di verifica'}
+                {resendState === 'sending' ? tr('account.profile.resending') : tr('account.profile.resend')}
               </button>
             )}
           </div>
         )}
         {me?.createdAt && (
           <div style={{ fontSize: 12, color: t.textMuted, marginTop: 10 }}>
-            Membro dal {new Date(me.createdAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {tr('account.profile.memberSince', { date: new Date(me.createdAt).toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' }) })}
           </div>
         )}
       </div>
 
       <div style={card}>
-        <div style={label}>Gruppi</div>
+        <div style={label}>{tr('account.language.label')}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {LANGUAGES.map(lang => (
+            <button
+              key={lang.code}
+              onClick={() => i18n.changeLanguage(lang.code)}
+              style={{
+                padding: '8px 16px', borderRadius: 10,
+                border: `1px solid ${i18n.language === lang.code ? t.primary : t.border}`,
+                background: i18n.language === lang.code ? t.primaryBg : t.bgSurfaceAlt,
+                color: i18n.language === lang.code ? t.primary : t.text,
+                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              {lang.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={card}>
+        <div style={label}>{tr('account.groups.label')}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: addingGroup ? 16 : 0 }}>
           {(groups || []).map(g => {
             const isActive = g.slug === activeGroup?.slug
@@ -137,16 +168,16 @@ export default function AccountPage() {
               }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</div>
-                  <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}>{g.role === 'ADMIN' ? 'Amministratore' : 'Giocatore'}</div>
+                  <div style={{ fontSize: 11, color: t.textMuted, marginTop: 2 }}>{g.role === 'ADMIN' ? tr('account.groups.admin') : tr('account.groups.player')}</div>
                 </div>
                 {isActive ? (
-                  <span style={{ fontSize: 11, fontWeight: 700, color: t.primary, flexShrink: 0 }}>✓ Attivo</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: t.primary, flexShrink: 0 }}>{tr('account.groups.active')}</span>
                 ) : (
                   <button onClick={() => selectGroup(g.slug)} style={{
                     padding: '6px 12px', borderRadius: 9, border: `1px solid ${t.border}`,
                     background: t.bgSurface, color: t.text, fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
                   }}>
-                    Passa a questo
+                    {tr('account.groups.switchTo')}
                   </button>
                 )}
               </div>
@@ -162,14 +193,14 @@ export default function AccountPage() {
               initialMode="join"
               onSuccess={(group) => {
                 setAddingGroup(false)
-                setJoinedMsg(`Ora fai parte di "${group.name}"`)
+                setJoinedMsg(tr('account.groups.joinedMessage', { name: group.name }))
               }}
             />
             <div
               onClick={() => setAddingGroup(false)}
               style={{ marginTop: 10, fontSize: 12, color: t.textSub, cursor: 'pointer', textAlign: 'center' }}
             >
-              Annulla
+              {tr('account.groups.cancel')}
             </div>
           </div>
         ) : (
@@ -178,79 +209,75 @@ export default function AccountPage() {
             border: `1px dashed ${t.border}`, background: 'transparent', color: t.textSub,
             fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}>
-            + Crea o unisciti a un altro gruppo
+            {tr('account.groups.addAnother')}
           </button>
         )}
       </div>
 
       <div style={card}>
-        <div style={label}>Cambia password</div>
+        <div style={label}>{tr('account.password.label')}</div>
         <form onSubmit={changePw}>
-          <input type="password" placeholder="Password attuale" value={current}
+          <input type="password" placeholder={tr('account.password.current')} value={current}
             onChange={e => setCurrent(e.target.value)} required autoComplete="current-password" style={inputStyle} />
-          <input type="password" placeholder="Nuova password (min 8 caratteri)" value={next}
+          <input type="password" placeholder={tr('account.password.new')} value={next}
             onChange={e => setNext(e.target.value)} required autoComplete="new-password" style={inputStyle} />
-          <input type="password" placeholder="Ripeti la nuova password" value={confirm}
+          <input type="password" placeholder={tr('account.password.confirm')} value={confirm}
             onChange={e => setConfirm(e.target.value)} required autoComplete="new-password" style={inputStyle} />
           {pwError && <div style={{ color: t.danger, fontSize: 13, marginBottom: 10 }}>{pwError}</div>}
-          {pwOk && <div style={{ color: t.win, fontSize: 13, marginBottom: 10 }}>✓ Password aggiornata. Le altre sessioni sono state disconnesse.</div>}
+          {pwOk && <div style={{ color: t.win, fontSize: 13, marginBottom: 10 }}>{tr('account.password.success')}</div>}
           <button type="submit" disabled={pwLoading} style={{
             padding: '10px 18px', background: t.primary, color: t.primaryFg, border: 'none',
             borderRadius: 11, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: pwLoading ? 0.7 : 1,
           }}>
-            {pwLoading ? '...' : 'Aggiorna password'}
+            {pwLoading ? '...' : tr('account.password.submit')}
           </button>
         </form>
       </div>
 
       <div style={card}>
-        <div style={label}>Sessione</div>
+        <div style={label}>{tr('account.session.label')}</div>
         <button onClick={logout} style={{
           padding: '10px 18px', borderRadius: 11, border: `1px solid ${t.border}`,
           background: t.bgSurfaceAlt, color: t.danger, fontSize: 14, fontWeight: 700, cursor: 'pointer',
         }}>
-          Esci dall'account
+          {tr('account.session.logout')}
         </button>
       </div>
 
       <div style={card}>
-        <div style={label}>Sostieni il progetto</div>
+        <div style={label}>{tr('account.support.label')}</div>
         <div style={{ fontSize: 13, color: t.textSub, marginBottom: 12, lineHeight: 1.5 }}>
-          CommanderOne è gratuito e lo resta per tutte le funzioni di gioco — nessuna donazione
-          sblocca niente. Se ti piace usarlo, una donazione libera su Ko-fi aiuta a coprire i costi
-          e a continuare a svilupparlo.
+          {tr('account.support.body')}
         </div>
         <a href={KOFI_URL} target="_blank" rel="noopener noreferrer" style={{
           display: 'inline-block', padding: '10px 18px', borderRadius: 11,
           background: t.accent, color: '#1a1206', fontSize: 14, fontWeight: 700,
           textDecoration: 'none',
         }}>
-          ☕ Offrimi un caffè su Ko-fi
+          {tr('account.support.cta')}
         </a>
       </div>
 
       <div style={{ ...card, border: `1px solid ${t.dangerBorder || t.danger}` }}>
-        <div style={{ ...label, color: t.danger }}>Zona pericolosa</div>
+        <div style={{ ...label, color: t.danger }}>{tr('account.danger.label')}</div>
         {!showDelete ? (
           <>
             <div style={{ fontSize: 13, color: t.textSub, marginBottom: 12, lineHeight: 1.5 }}>
-              Cancella definitivamente il tuo account e i tuoi dati personali. Le partite già giocate
-              con altri restano nello storico del gruppo, ma non più a tuo nome.
+              {tr('account.danger.body')}
             </div>
             <button onClick={() => setShowDelete(true)} style={{
               padding: '10px 18px', borderRadius: 11, border: `1px solid ${t.dangerBorder || t.danger}`,
               background: 'transparent', color: t.danger, fontSize: 14, fontWeight: 700, cursor: 'pointer',
             }}>
-              Elimina il mio account
+              {tr('account.danger.cta')}
             </button>
           </>
         ) : (
           <form onSubmit={deleteAccount}>
             <div style={{ fontSize: 13, color: t.danger, marginBottom: 12, lineHeight: 1.5, fontWeight: 600 }}>
-              Questa azione non si può annullare. Username ed email tornano liberi; mazzi e partecipazioni
-              a partite già giocate restano visibili al gruppo, ma anonimizzati.
+              {tr('account.danger.confirmBody')}
             </div>
-            <input type="password" placeholder="Conferma con la tua password" value={deletePw}
+            <input type="password" placeholder={tr('account.danger.confirmPassword')} value={deletePw}
               onChange={e => setDeletePw(e.target.value)} required autoComplete="current-password" style={inputStyle} />
             {deleteError && <div style={{ color: t.danger, fontSize: 13, marginBottom: 10 }}>{deleteError}</div>}
             <div style={{ display: 'flex', gap: 10 }}>
@@ -258,13 +285,13 @@ export default function AccountPage() {
                 padding: '10px 18px', background: t.danger, color: '#fff', border: 'none',
                 borderRadius: 11, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: deleteLoading ? 0.7 : 1,
               }}>
-                {deleteLoading ? '...' : 'Elimina definitivamente'}
+                {deleteLoading ? '...' : tr('account.danger.confirmSubmit')}
               </button>
               <button type="button" onClick={() => { setShowDelete(false); setDeletePw(''); setDeleteError('') }} style={{
                 padding: '10px 18px', borderRadius: 11, border: `1px solid ${t.border}`,
                 background: 'transparent', color: t.textSub, fontSize: 14, fontWeight: 600, cursor: 'pointer',
               }}>
-                Annulla
+                {tr('account.danger.cancel')}
               </button>
             </div>
           </form>

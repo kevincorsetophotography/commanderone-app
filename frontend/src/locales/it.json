@@ -1,0 +1,126 @@
+{
+  "auth": {
+    "tagline": "IL TUO PLAYGROUP, TRACCIATO",
+    "login": {
+      "title": "Bentornato",
+      "subtitle": "Accedi per tracciare le tue partite",
+      "usernameOrEmail": "Username o email",
+      "password": "Password",
+      "forgotPassword": "Password dimenticata?",
+      "submit": "Accedi",
+      "noAccount": "Non hai un account?",
+      "switchToRegister": "Registrati"
+    },
+    "register": {
+      "title": "Crea account",
+      "subtitle": "Registra un nuovo giocatore",
+      "username": "Username",
+      "email": "Email",
+      "password": "Password (min 8 caratteri)",
+      "submit": "Registrati",
+      "hasAccount": "Hai già un account?",
+      "switchToLogin": "Accedi",
+      "termsNotice": "Registrandoti accetti i <terms>Termini di Servizio</terms> e la <privacy>Privacy Policy</privacy>.",
+      "termsLink": "Termini di Servizio",
+      "privacyLink": "Privacy Policy"
+    },
+    "fanContentDisclaimer": "CommanderOne è Fan Content non ufficiale, permesso dalla Fan Content Policy di Wizards of the Coast. Non approvato/sostenuto da Wizards."
+  },
+  "onboarding": {
+    "welcome": "Benvenuto!",
+    "subtitle": "Crea il tuo gruppo di gioco o unisciti a uno esistente con un codice invito",
+    "logout": "Esci"
+  },
+  "groupForm": {
+    "createTab": "Crea gruppo",
+    "joinTab": "Unisciti",
+    "namePlaceholder": "Nome del gruppo (es. Amici del venerdì)",
+    "becomeAdmin": "Diventerai l'amministratore di questo gruppo",
+    "invitePlaceholder": "Codice invito",
+    "askInvite": "Chiedi il codice a un membro del gruppo che vuoi raggiungere",
+    "createSubmit": "Crea gruppo",
+    "joinSubmit": "Unisciti al gruppo"
+  },
+  "account": {
+    "title": "Account",
+    "profile": {
+      "label": "Profilo",
+      "noEmail": "Nessuna email associata",
+      "verified": "verificata",
+      "unverified": "da verificare",
+      "emailSent": "📬 Email inviata, controlla la casella (anche lo spam).",
+      "sendFailed": "Invio fallito, riprova più tardi.",
+      "resend": "Rimanda email di verifica",
+      "resending": "Invio…",
+      "memberSince": "Membro dal {{date}}"
+    },
+    "groups": {
+      "label": "Gruppi",
+      "admin": "Amministratore",
+      "player": "Giocatore",
+      "active": "✓ Attivo",
+      "switchTo": "Passa a questo",
+      "addAnother": "+ Crea o unisciti a un altro gruppo",
+      "cancel": "Annulla",
+      "joinedMessage": "Ora fai parte di \"{{name}}\""
+    },
+    "password": {
+      "label": "Cambia password",
+      "current": "Password attuale",
+      "new": "Nuova password (min 8 caratteri)",
+      "confirm": "Ripeti la nuova password",
+      "mismatch": "Le nuove password non coincidono",
+      "success": "✓ Password aggiornata. Le altre sessioni sono state disconnesse.",
+      "submit": "Aggiorna password"
+    },
+    "session": {
+      "label": "Sessione",
+      "logout": "Esci dall'account"
+    },
+    "support": {
+      "label": "Sostieni il progetto",
+      "body": "CommanderOne è gratuito e lo resta per tutte le funzioni di gioco — nessuna donazione sblocca niente. Se ti piace usarlo, una donazione libera su Ko-fi aiuta a coprire i costi e a continuare a svilupparlo.",
+      "cta": "☕ Offrimi un caffè su Ko-fi"
+    },
+    "danger": {
+      "label": "Zona pericolosa",
+      "body": "Cancella definitivamente il tuo account e i tuoi dati personali. Le partite già giocate con altri restano nello storico del gruppo, ma non più a tuo nome.",
+      "cta": "Elimina il mio account",
+      "confirmBody": "Questa azione non si può annullare. Username ed email tornano liberi; mazzi e partecipazioni a partite già giocate restano visibili al gruppo, ma anonimizzati.",
+      "confirmPassword": "Conferma con la tua password",
+      "confirmSubmit": "Elimina definitivamente",
+      "cancel": "Annulla"
+    },
+    "language": {
+      "label": "Lingua"
+    }
+  },
+  "errors": {
+    "USERNAME_REQUIRED": "Username richiesto",
+    "USERNAME_INVALID": "Username non valido: 3-24 caratteri, solo lettere, numeri, punto, trattino e underscore",
+    "EMAIL_REQUIRED": "Email richiesta",
+    "EMAIL_INVALID": "Email non valida",
+    "PASSWORD_REQUIRED": "Password richiesta",
+    "PASSWORD_TOO_SHORT": "Password troppo corta (minimo 8 caratteri)",
+    "PASSWORD_TOO_LONG": "Password troppo lunga (max 128 caratteri)",
+    "USERNAME_TAKEN": "Username già in uso",
+    "EMAIL_TAKEN": "Email già in uso",
+    "INVALID_CREDENTIALS": "Credenziali non valide",
+    "USER_NOT_FOUND": "Utente non trovato",
+    "INVALID_OR_EXPIRED_TOKEN_VERIFY": "Link non valido o scaduto. Richiedi una nuova email di verifica.",
+    "INVALID_OR_EXPIRED_TOKEN_RESET": "Link non valido o scaduto. Richiedi un nuovo reset.",
+    "NO_EMAIL_ASSOCIATED": "Nessuna email associata all'account",
+    "EMAIL_ALREADY_VERIFIED": "Email già verificata",
+    "EMAIL_SEND_FAILED": "Invio email fallito, riprova più tardi",
+    "WRONG_CURRENT_PASSWORD": "Password attuale errata",
+    "INVALID_AVATAR_ID": "Carta avatar non valida",
+    "PROFILE_UPDATE_FAILED": "Errore durante l'aggiornamento del profilo",
+    "REGISTER_FAILED": "Errore durante la registrazione",
+    "PASSWORD_REQUIRED_TO_CONFIRM": "Password richiesta per confermare",
+    "WRONG_PASSWORD": "Password errata",
+    "ACCOUNT_DELETE_FAILED": "Errore durante la cancellazione dell'account",
+    "SOLE_ADMIN_BLOCKED_ONE": "Sei l'unico amministratore di questo gruppo ({{groups}}): promuovi un altro membro ad admin prima di eliminare l'account.",
+    "SOLE_ADMIN_BLOCKED_OTHER": "Sei l'unico amministratore di questi gruppi ({{groups}}): promuovi un altro membro ad admin prima di eliminare l'account.",
+    "GENERIC": "Errore di connessione"
+  }
+}

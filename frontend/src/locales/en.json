@@ -1,0 +1,126 @@
+{
+  "auth": {
+    "tagline": "YOUR PLAYGROUP, TRACKED",
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Log in to track your games",
+      "usernameOrEmail": "Username or email",
+      "password": "Password",
+      "forgotPassword": "Forgot your password?",
+      "submit": "Log in",
+      "noAccount": "Don't have an account?",
+      "switchToRegister": "Sign up"
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Register a new player",
+      "username": "Username",
+      "email": "Email",
+      "password": "Password (min 8 characters)",
+      "submit": "Sign up",
+      "hasAccount": "Already have an account?",
+      "switchToLogin": "Log in",
+      "termsNotice": "By signing up you agree to the <terms>Terms of Service</terms> and the <privacy>Privacy Policy</privacy>.",
+      "termsLink": "Terms of Service",
+      "privacyLink": "Privacy Policy"
+    },
+    "fanContentDisclaimer": "CommanderOne is unofficial Fan Content, permitted under the Fan Content Policy of Wizards of the Coast. Not approved/endorsed by Wizards."
+  },
+  "onboarding": {
+    "welcome": "Welcome!",
+    "subtitle": "Create your playgroup or join an existing one with an invite code",
+    "logout": "Log out"
+  },
+  "groupForm": {
+    "createTab": "Create group",
+    "joinTab": "Join",
+    "namePlaceholder": "Group name (e.g. Friday Night Crew)",
+    "becomeAdmin": "You'll become this group's admin",
+    "invitePlaceholder": "Invite code",
+    "askInvite": "Ask a member of the group you want to join for the code",
+    "createSubmit": "Create group",
+    "joinSubmit": "Join group"
+  },
+  "account": {
+    "title": "Account",
+    "profile": {
+      "label": "Profile",
+      "noEmail": "No email associated",
+      "verified": "verified",
+      "unverified": "unverified",
+      "emailSent": "📬 Email sent, check your inbox (and spam folder).",
+      "sendFailed": "Sending failed, try again later.",
+      "resend": "Resend verification email",
+      "resending": "Sending…",
+      "memberSince": "Member since {{date}}"
+    },
+    "groups": {
+      "label": "Groups",
+      "admin": "Admin",
+      "player": "Player",
+      "active": "✓ Active",
+      "switchTo": "Switch to this",
+      "addAnother": "+ Create or join another group",
+      "cancel": "Cancel",
+      "joinedMessage": "You're now part of \"{{name}}\""
+    },
+    "password": {
+      "label": "Change password",
+      "current": "Current password",
+      "new": "New password (min 8 characters)",
+      "confirm": "Repeat new password",
+      "mismatch": "New passwords don't match",
+      "success": "✓ Password updated. Other sessions have been signed out.",
+      "submit": "Update password"
+    },
+    "session": {
+      "label": "Session",
+      "logout": "Log out"
+    },
+    "support": {
+      "label": "Support the project",
+      "body": "CommanderOne is free and stays free for all gameplay features — no donation unlocks anything. If you enjoy using it, a free-will donation on Ko-fi helps cover costs and keep it going.",
+      "cta": "☕ Buy me a coffee on Ko-fi"
+    },
+    "danger": {
+      "label": "Danger zone",
+      "body": "Permanently delete your account and personal data. Games already played with others stay in the group's history, just no longer under your name.",
+      "cta": "Delete my account",
+      "confirmBody": "This can't be undone. Your username and email become available again; decks and participations in games already played stay visible to the group, but anonymized.",
+      "confirmPassword": "Confirm with your password",
+      "confirmSubmit": "Delete permanently",
+      "cancel": "Cancel"
+    },
+    "language": {
+      "label": "Language"
+    }
+  },
+  "errors": {
+    "USERNAME_REQUIRED": "Username required",
+    "USERNAME_INVALID": "Invalid username: 3-24 characters, letters, numbers, dot, dash and underscore only",
+    "EMAIL_REQUIRED": "Email required",
+    "EMAIL_INVALID": "Invalid email",
+    "PASSWORD_REQUIRED": "Password required",
+    "PASSWORD_TOO_SHORT": "Password too short (minimum 8 characters)",
+    "PASSWORD_TOO_LONG": "Password too long (max 128 characters)",
+    "USERNAME_TAKEN": "Username already taken",
+    "EMAIL_TAKEN": "Email already in use",
+    "INVALID_CREDENTIALS": "Invalid credentials",
+    "USER_NOT_FOUND": "User not found",
+    "INVALID_OR_EXPIRED_TOKEN_VERIFY": "Invalid or expired link. Request a new verification email.",
+    "INVALID_OR_EXPIRED_TOKEN_RESET": "Invalid or expired link. Request a new reset.",
+    "NO_EMAIL_ASSOCIATED": "No email associated with this account",
+    "EMAIL_ALREADY_VERIFIED": "Email already verified",
+    "EMAIL_SEND_FAILED": "Failed to send email, try again later",
+    "WRONG_CURRENT_PASSWORD": "Current password is wrong",
+    "INVALID_AVATAR_ID": "Invalid avatar card",
+    "PROFILE_UPDATE_FAILED": "Error updating profile",
+    "REGISTER_FAILED": "Error during registration",
+    "PASSWORD_REQUIRED_TO_CONFIRM": "Password required to confirm",
+    "WRONG_PASSWORD": "Wrong password",
+    "ACCOUNT_DELETE_FAILED": "Error deleting account",
+    "SOLE_ADMIN_BLOCKED_ONE": "You're the only admin of this group ({{groups}}): promote another member to admin before deleting your account.",
+    "SOLE_ADMIN_BLOCKED_OTHER": "You're the only admin of these groups ({{groups}}): promote another member to admin before deleting your account.",
+    "GENERIC": "Connection error"
+  }
+}

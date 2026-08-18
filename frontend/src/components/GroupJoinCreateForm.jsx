@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useGroup } from '../hooks/useGroup'
 import { useTheme } from '../hooks/useTheme'
+import { translateApiError } from '../lib/apiError'
 
 // Form crea/unisciti a un gruppo, riusato sia nell'onboarding (primo gruppo,
 // vedi OnboardingPage) sia dalla pagina Account per aggiungerne altri: un
@@ -8,6 +10,9 @@ import { useTheme } from '../hooks/useTheme'
 export default function GroupJoinCreateForm({ onSuccess, initialMode = 'create' }) {
   const { createGroup, joinGroup } = useGroup()
   const { t } = useTheme()
+  // useTheme() usa già "t" per i token colore in tutto il progetto — alias
+  // "tr" per la traduzione, non "t", per non fare ombra a quello.
+  const { t: tr } = useTranslation()
   const [mode, setMode] = useState(initialMode)
   const [name, setName] = useState('')
   const [inviteCode, setInviteCode] = useState('')
@@ -24,7 +29,7 @@ export default function GroupJoinCreateForm({ onSuccess, initialMode = 'create' 
       setName(''); setInviteCode('')
       onSuccess?.(group)
     } catch (err) {
-      setError(err.error || 'Errore di connessione')
+      setError(translateApiError(err, tr))
     } finally {
       setLoading(false)
     }
@@ -50,33 +55,33 @@ export default function GroupJoinCreateForm({ onSuccess, initialMode = 'create' 
   return (
     <div>
       <div style={{ display: 'flex', gap: 6, background: t.bgMuted, borderRadius: 12, padding: 4, marginBottom: 16 }}>
-        <div style={tabStyle(mode === 'create')} onClick={() => { setMode('create'); setError('') }}>Crea gruppo</div>
-        <div style={tabStyle(mode === 'join')} onClick={() => { setMode('join'); setError('') }}>Unisciti</div>
+        <div style={tabStyle(mode === 'create')} onClick={() => { setMode('create'); setError('') }}>{tr('groupForm.createTab')}</div>
+        <div style={tabStyle(mode === 'join')} onClick={() => { setMode('join'); setError('') }}>{tr('groupForm.joinTab')}</div>
       </div>
 
       <form onSubmit={submit}>
         {mode === 'create' ? (
           <div style={{ marginBottom: 14 }}>
             <input
-              type="text" placeholder="Nome del gruppo (es. Amici del venerdì)" value={name}
+              type="text" placeholder={tr('groupForm.namePlaceholder')} value={name}
               onChange={e => setName(e.target.value)} required maxLength={60}
               onFocus={() => setFocusField('name')} onBlur={() => setFocusField('')}
               style={inputStyle('name')}
             />
             <div style={{ fontSize: 11, color: t.textMuted, marginTop: 6 }}>
-              Diventerai l'amministratore di questo gruppo
+              {tr('groupForm.becomeAdmin')}
             </div>
           </div>
         ) : (
           <div style={{ marginBottom: 14 }}>
             <input
-              type="text" placeholder="Codice invito" value={inviteCode}
+              type="text" placeholder={tr('groupForm.invitePlaceholder')} value={inviteCode}
               onChange={e => setInviteCode(e.target.value)} required
               onFocus={() => setFocusField('invite')} onBlur={() => setFocusField('')}
               style={{ ...inputStyle('invite'), textTransform: 'uppercase' }}
             />
             <div style={{ fontSize: 11, color: t.textMuted, marginTop: 6 }}>
-              Chiedi il codice a un membro del gruppo che vuoi raggiungere
+              {tr('groupForm.askInvite')}
             </div>
           </div>
         )}
@@ -90,7 +95,7 @@ export default function GroupJoinCreateForm({ onSuccess, initialMode = 'create' 
             boxShadow: t.glow, transition: 'all 0.18s ease', opacity: loading ? 0.7 : 1,
           }}
         >
-          {loading ? '...' : mode === 'create' ? 'Crea gruppo' : 'Unisciti al gruppo'}
+          {loading ? '...' : mode === 'create' ? tr('groupForm.createSubmit') : tr('groupForm.joinSubmit')}
         </button>
       </form>
     </div>
