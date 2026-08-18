@@ -123,14 +123,32 @@ const gameInclude = {
   _count: { select: { comments: true } }
 };
 
+// GET /api/groups/:slug/games — senza query params ritorna l'array completo
+// come sempre (retrocompatibile: FeedPage/DashboardPage/GruppoPage/... calcolano
+// stat aggregate lato client sull'intera lista). Con ?page/?pageSize passati
+// esplicitamente, ritorna una pagina + metadati — per chi vuole davvero
+// paginare (es. uno storico partite molto lungo) senza scaricarlo tutto.
 router.get('/', async (req, res) => {
-  const games = await prisma.game.findMany({
-    where: { groupId: req.group.id },
-    orderBy: { playedAt: 'desc' },
-    include: gameInclude
-  });
+  const where = { groupId: req.group.id };
+  const paginated = req.query.page !== undefined || req.query.pageSize !== undefined;
 
-  res.json(games);
+  if (!paginated) {
+    const games = await prisma.game.findMany({ where, orderBy: { playedAt: 'desc' }, include: gameInclude });
+    return res.json(games);
+  }
+
+  const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number.parseInt(req.query.pageSize, 10) || 20));
+
+  const [games, total] = await Promise.all([
+    prisma.game.findMany({
+      where, orderBy: { playedAt: 'desc' }, include: gameInclude,
+      skip: (page - 1) * pageSize, take: pageSize,
+    }),
+    prisma.game.count({ where }),
+  ]);
+
+  res.json({ games, total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)) });
 });
 
 // GET /api/groups/:slug/games/:id — singola partita con dettagli (per la pagina partita)

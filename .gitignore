@@ -20,3 +20,6 @@ backend/prisma/*.db-wal
 
 # Database PostgreSQL locale "embedded" (ambiente di sviluppo)
 backend/.devdb/
+# Database PostgreSQL locale "embedded" dei test di integrazione (test/globalSetup.mjs).
+# Il teardown lo elimina a fine run; resta solo se una run crasha a metà.
+backend/.testdb/
