@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
+import { translateApiError } from '../lib/apiError'
 
 export default function Login() {
   const { login, register } = useAuth()
   const { t, dark } = useTheme()
+  const { t: tr } = useTranslation()
   const navigate = useNavigate()
   const [mode, setMode] = useState('login')
   const [username, setUsername] = useState('')
@@ -24,7 +27,7 @@ export default function Login() {
       else await register(username, email, password)
       navigate('/')
     } catch (err) {
-      setError(err.error || 'Errore di connessione')
+      setError(translateApiError(err, tr))
     } finally {
       setLoading(false)
     }
@@ -59,7 +62,7 @@ export default function Login() {
               <span style={{ color: t.text }}>Commander</span>
               <span className={`ct-wordmark ${dark ? 'dark' : 'light'}`}>One</span>
             </div>
-            <div style={{ fontSize: 12, color: t.textMuted, letterSpacing: '0.18em', fontWeight: 600, marginTop: 4 }}>IL TUO PLAYGROUP, TRACCIATO</div>
+            <div style={{ fontSize: 12, color: t.textMuted, letterSpacing: '0.18em', fontWeight: 600, marginTop: 4 }}>{tr('auth.tagline')}</div>
           </div>
         </div>
 
@@ -78,17 +81,17 @@ export default function Login() {
         }}>
           <div style={{ marginBottom: '1.5rem' }}>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
-              {mode === 'login' ? 'Bentornato' : 'Crea account'}
+              {mode === 'login' ? tr('auth.login.title') : tr('auth.register.title')}
             </div>
             <div style={{ fontSize: 13, color: t.textSub }}>
-              {mode === 'login' ? 'Accedi per tracciare le tue partite' : 'Registra un nuovo giocatore'}
+              {mode === 'login' ? tr('auth.login.subtitle') : tr('auth.register.subtitle')}
             </div>
           </div>
 
           <form onSubmit={submit}>
             <div style={{ marginBottom: 12 }}>
               <input
-                type="text" placeholder={mode === 'login' ? 'Username o email' : 'Username'} value={username}
+                type="text" placeholder={mode === 'login' ? tr('auth.login.usernameOrEmail') : tr('auth.register.username')} value={username}
                 onChange={e => setUsername(e.target.value)} required
                 autoComplete="username"
                 onFocus={() => setFocusField('user')} onBlur={() => setFocusField('')}
@@ -98,7 +101,7 @@ export default function Login() {
             {mode === 'register' && (
               <div style={{ marginBottom: 12 }}>
                 <input
-                  type="email" placeholder="Email" value={email}
+                  type="email" placeholder={tr('auth.register.email')} value={email}
                   onChange={e => setEmail(e.target.value)} required
                   autoComplete="email"
                   onFocus={() => setFocusField('email')} onBlur={() => setFocusField('')}
@@ -108,7 +111,7 @@ export default function Login() {
             )}
             <div style={{ marginBottom: mode === 'login' ? 8 : 18 }}>
               <input
-                type="password" placeholder={mode === 'login' ? 'Password' : 'Password (min 8 caratteri)'} value={password}
+                type="password" placeholder={mode === 'login' ? tr('auth.login.password') : tr('auth.register.password')} value={password}
                 onChange={e => setPassword(e.target.value)} required
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 onFocus={() => setFocusField('pass')} onBlur={() => setFocusField('')}
@@ -118,7 +121,7 @@ export default function Login() {
             {mode === 'login' && (
               <div style={{ marginBottom: 14, textAlign: 'right' }}>
                 <Link to="/reset-password" style={{ fontSize: 12, color: t.textSub, textDecoration: 'none' }}>
-                  Password dimenticata?
+                  {tr('auth.login.forgotPassword')}
                 </Link>
               </div>
             )}
@@ -132,32 +135,37 @@ export default function Login() {
                 boxShadow: t.glow, transition: 'all 0.18s ease', opacity: loading ? 0.7 : 1,
               }}
             >
-              {loading ? '...' : mode === 'login' ? 'Accedi' : 'Registrati'}
+              {loading ? '...' : mode === 'login' ? tr('auth.login.submit') : tr('auth.register.submit')}
             </button>
           </form>
 
           {mode === 'register' && (
             <div style={{ marginTop: 12, textAlign: 'center', fontSize: 11, color: t.textMuted, lineHeight: 1.5 }}>
-              Registrandoti accetti i <Link to="/termini" style={{ color: t.textSub }}>Termini di Servizio</Link> e
-              {' '}la <Link to="/privacy" style={{ color: t.textSub }}>Privacy Policy</Link>.
+              <Trans
+                i18nKey="auth.register.termsNotice"
+                components={{
+                  terms: <Link to="/termini" style={{ color: t.textSub }} />,
+                  privacy: <Link to="/privacy" style={{ color: t.textSub }} />,
+                }}
+              />
             </div>
           )}
 
           <div style={{ marginTop: 18, textAlign: 'center', fontSize: 13, color: t.textSub }}>
-            {mode === 'login' ? 'Non hai un account?' : 'Hai già un account?'}{' '}
+            {mode === 'login' ? tr('auth.login.noAccount') : tr('auth.register.hasAccount')}{' '}
             <span
               onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}
               style={{ color: t.primary, cursor: 'pointer', fontWeight: 600 }}
             >
-              {mode === 'login' ? 'Registrati' : 'Accedi'}
+              {mode === 'login' ? tr('auth.login.switchToRegister') : tr('auth.register.switchToLogin')}
             </span>
           </div>
         </div>
 
         <div style={{ marginTop: 22, fontSize: 10, color: t.textMuted, textAlign: 'center', lineHeight: 1.5, maxWidth: 320 }}>
-          CommanderOne è Fan Content non ufficiale, permesso dalla Fan Content Policy di Wizards of the Coast. Non approvato/sostenuto da Wizards.
+          {tr('auth.fanContentDisclaimer')}
           <br />
-          <Link to="/privacy" style={{ color: t.textMuted }}>Privacy Policy</Link> · <Link to="/termini" style={{ color: t.textMuted }}>Termini di Servizio</Link>
+          <Link to="/privacy" style={{ color: t.textMuted }}>{tr('auth.register.privacyLink')}</Link> · <Link to="/termini" style={{ color: t.textMuted }}>{tr('auth.register.termsLink')}</Link>
         </div>
       </div>
     </div>

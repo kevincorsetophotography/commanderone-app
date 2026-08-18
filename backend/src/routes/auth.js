@@ -56,11 +56,11 @@ router.post('/register', async (req, res) => {
     res.json({ token, user: publicUser(user) });
   } catch (error) {
     if (error.code === 'P2002') {
-      const field = error.meta?.target?.includes('email') ? 'Email' : 'Username';
-      return res.status(409).json({ error: `${field} già in uso` });
+      const field = error.meta?.target?.includes('email') ? 'EMAIL_TAKEN' : 'USERNAME_TAKEN';
+      return res.status(409).json({ error: field });
     }
     console.error('register error', error);
-    res.status(500).json({ error: 'Errore durante la registrazione' });
+    res.status(500).json({ error: 'REGISTER_FAILED' });
   }
 });
 
@@ -68,13 +68,13 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
   if (typeof username !== 'string' || typeof password !== 'string')
-    return res.status(400).json({ error: 'Credenziali non valide' });
+    return res.status(400).json({ error: 'INVALID_CREDENTIALS' });
 
   const user = await prisma.user.findFirst({
     where: { OR: [{ username }, { email: normalizeEmail(username) }] },
   });
   if (!user || !(await bcrypt.compare(password, user.password)))
-    return res.status(401).json({ error: 'Credenziali non valide' });
+    return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
 
   const token = signToken(user);
   res.json({ token, user: publicUser(user) });
@@ -86,14 +86,14 @@ router.get('/me', auth, async (req, res) => {
     where: { id: req.user.id },
     select: { id: true, username: true, email: true, emailVerifiedAt: true, avatarCardName: true, avatarScryfallId: true, createdAt: true },
   });
-  if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+  if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
   res.json(user);
 });
 
 // POST /api/auth/verify-email — conferma l'indirizzo tramite il token del link
 router.post('/verify-email', async (req, res) => {
   const token = await consumeToken(prisma, req.body.token, TYPES.VERIFY_EMAIL);
-  if (!token) return res.status(400).json({ error: 'Link non valido o scaduto. Richiedi una nuova email di verifica.' });
+  if (!token) return res.status(400).json({ error: 'INVALID_OR_EXPIRED_TOKEN_VERIFY' });
   await prisma.user.update({
     where: { id: token.userId },
     data: { emailVerifiedAt: new Date() },
@@ -104,22 +104,22 @@ router.post('/verify-email', async (req, res) => {
 // POST /api/auth/resend-verification — rimanda il link (autenticato)
 router.post('/resend-verification', auth, async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-  if (!user?.email) return res.status(400).json({ error: 'Nessuna email associata all\'account' });
-  if (user.emailVerifiedAt) return res.status(400).json({ error: 'Email già verificata' });
+  if (!user?.email) return res.status(400).json({ error: 'NO_EMAIL_ASSOCIATED' });
+  if (user.emailVerifiedAt) return res.status(400).json({ error: 'EMAIL_ALREADY_VERIFIED' });
   try {
     const raw = await issueToken(prisma, user.id, TYPES.VERIFY_EMAIL, VERIFY_TTL);
     await sendVerificationEmail(user.email, raw);
     res.json({ ok: true });
   } catch (e) {
     console.error('resend verification error', e);
-    res.status(502).json({ error: 'Invio email fallito, riprova più tardi' });
+    res.status(502).json({ error: 'EMAIL_SEND_FAILED' });
   }
 });
 
 // POST /api/auth/forgot-password — risponde SEMPRE ok (niente user enumeration)
 router.post('/forgot-password', async (req, res) => {
   const email = normalizeEmail(req.body.email);
-  if (validateEmail(email)) return res.status(400).json({ error: 'Email non valida' });
+  if (validateEmail(email)) return res.status(400).json({ error: 'EMAIL_INVALID' });
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (user) {
@@ -140,7 +140,7 @@ router.post('/reset-password', async (req, res) => {
   if (invalid) return res.status(400).json({ error: invalid });
 
   const token = await consumeToken(prisma, req.body.token, TYPES.RESET_PASSWORD);
-  if (!token) return res.status(400).json({ error: 'Link non valido o scaduto. Richiedi un nuovo reset.' });
+  if (!token) return res.status(400).json({ error: 'INVALID_OR_EXPIRED_TOKEN_RESET' });
 
   const hash = await bcrypt.hash(newPassword, 10);
   const user = await prisma.user.update({
@@ -164,7 +164,7 @@ router.patch('/password', auth, async (req, res) => {
 
   const user = await prisma.user.findUnique({ where: { id: req.user.id } });
   if (!user || typeof currentPassword !== 'string' || !(await bcrypt.compare(currentPassword, user.password)))
-    return res.status(401).json({ error: 'Password attuale errata' });
+    return res.status(401).json({ error: 'WRONG_CURRENT_PASSWORD' });
 
   const hash = await bcrypt.hash(newPassword, 10);
   const updated = await prisma.user.update({
@@ -181,7 +181,7 @@ router.patch('/profile', auth, async (req, res) => {
   const { avatarCardName, avatarScryfallId } = req.body;
   if (avatarScryfallId !== undefined && avatarScryfallId !== null) {
     if (typeof avatarScryfallId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(avatarScryfallId)) {
-      return res.status(400).json({ error: 'avatarScryfallId non valido' });
+      return res.status(400).json({ error: 'INVALID_AVATAR_ID' });
     }
   }
   try {
@@ -195,7 +195,7 @@ router.patch('/profile', auth, async (req, res) => {
     res.json({ ok: true, avatarCardName: updated.avatarCardName, avatarScryfallId: updated.avatarScryfallId });
   } catch (e) {
     console.error('update profile error', e);
-    res.status(500).json({ error: 'Errore aggiornamento profilo' });
+    res.status(500).json({ error: 'PROFILE_UPDATE_FAILED' });
   }
 });
 
@@ -212,16 +212,19 @@ router.delete('/account', auth, async (req, res) => {
 
   const user = await prisma.user.findUnique({ where: { id: req.user.id } });
   if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.status(401).json({ error: 'Password errata' });
+    return res.status(401).json({ error: 'WRONG_PASSWORD' });
   }
 
   try {
     const result = await deleteAccount(prisma, req.user.id);
-    if (result.error) return res.status(409).json({ error: result.error });
+    // result.groupNames (se presente) sono i nomi reali dei gruppi che bloccano
+    // la cancellazione — il frontend li interpola nel messaggio tradotto
+    // invece di riceverli già incollati in una frase italiana.
+    if (result.error) return res.status(409).json({ error: result.error, groupNames: result.groupNames });
     res.json({ ok: true });
   } catch (error) {
     console.error('delete account error', error);
-    res.status(500).json({ error: 'Errore durante la cancellazione dell\'account' });
+    res.status(500).json({ error: 'ACCOUNT_DELETE_FAILED' });
   }
 });
 
