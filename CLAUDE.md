@@ -91,12 +91,13 @@ gratuito se il tetto giornaliero è esaurito o Groq non risponde)
 - Test di integrazione HTTP (supertest + Postgres embedded dedicato, `backend/test/`) — 37 test: auth, gruppi, `resolveGroup`/`requireGroupAdmin`, isolamento multi-tenant, cancellazione account.
 - Paginazione opzionale `GET /api/groups/:slug/games` (retrocompatibile — vedi sopra). `api.getGamesPage()` esiste lato frontend ma **nessuna pagina lo usa ancora**.
 - Link donazioni Ko-fi (`lib/links.js`, footer + pagina Account + card chiudibile in cima al Feed con snooze 30gg via `SupportBanner.jsx`) — chiudeva l'ultima voce economica in "Prossimi". Primo modo per validare se la community sostiene il progetto prima di investire in ads/IAP. (Un'icona in navbar era stata provata e scartata: affollava troppo, specie su mobile.)
+- **i18n Fase 1** (react-i18next + `locales/it.json`/`en.json`): flusso auth completo in IT/EN — Login, Onboarding, Account (con selettore lingua), `GroupJoinCreateForm`. Backend `/api/auth/*` migrato a codici errore (`validators.js`, `routes/auth.js`, `lib/accountDeletion.js`) invece di frasi italiane pronte, tradotti lato client via `lib/apiError.js`. Il resto del backend (14 file, ~150 messaggi) non è ancora migrato e continua a restituire italiano diretto — `apiError.js` lo passa attraverso intatto (nessuna regressione), ma per quelle route la UI resta italiana anche in modalità EN. Convenzione per le fasi successive: `useTheme()` usa già `t` per i token colore ovunque nel progetto, quindi `useTranslation()` va sempre aliasato `tr`.
 
 ### Prossimi
 - Wiring UI della paginazione partite (vedi sopra) — solo se/quando lo storico di un gruppo reale inizia a diventare pesante da caricare tutto insieme.
 
-### i18n — prerequisito per "internazionale", il lavoro grosso
-Tutto è hardcoded in italiano oggi: non solo le stringhe UI ma anche i **messaggi d'errore restituiti dal backend** (`validators.js`, `mailer.js`, ...) e ~21 occorrenze di `'it-IT'` per date/numeri sparse in una dozzina di file frontend. Nessuna libreria i18n installata. Serve: (1) libreria i18n frontend (es. `react-i18next`), (2) refactor backend per restituire **codici errore** invece di stringhe italiane pronte, tradotti lato client. Va prima di ads/Capacitor, non dopo — è la porta d'ingresso per qualunque mercato non italiano.
+### i18n Fase 2 — il resto dell'app
+Restano da convertire ~35 file frontend (Feed, Gioca, Eventi, Gruppo, Mazzi, Judge, Admin, Guida, ...) e i ~150 messaggi d'errore nei 14 file backend rimasti, seguendo lo stesso pattern della Fase 1 (codici errore dal backend, `t`→`tr` per non fare ombra al tema, `locales/it.json`/`en.json`). Nessuna nuova libreria da installare, solo applicare il pattern già stabilito schermata per schermata. Va prima di ads/Capacitor, non dopo — è la porta d'ingresso per qualunque mercato non italiano.
 
 ### Crescita
 - Link di invito condivisibile con preview + QR invece del solo codice a mano — `qrcode` è già una dipendenza frontend, usata solo in `SeasonRecap.jsx`, non per gli inviti.
