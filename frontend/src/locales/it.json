@@ -116,6 +116,36 @@
       "label": "Lingua"
     }
   },
+  "nav": {
+    "feed": "Feed",
+    "gioca": "Gioca",
+    "eventi": "Eventi",
+    "gruppo": "Gruppo",
+    "mazzi": "Mazzi",
+    "admin": "Admin",
+    "io": "Io",
+    "goToProfile": "Vai al tuo profilo",
+    "switchGroup": "Cambia gruppo",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "lightModeLong": "Passa a light mode",
+    "darkModeLong": "Passa a dark mode",
+    "accountSettings": "Impostazioni account",
+    "logout": "Esci"
+  },
+  "app": {
+    "fanContentDisclaimerFull": "CommanderOne è Fan Content non ufficiale, permesso dalla Fan Content Policy di Wizards of the Coast. Non è approvato/sostenuto da Wizards. Le porzioni di proprietà di Wizards sono ©Wizards of the Coast LLC.",
+    "supportLink": "☕ Sostieni il progetto"
+  },
+  "feedback": {
+    "confirmDefault": "Conferma"
+  },
+  "supportBanner": {
+    "title": "Ti piace CommanderOne?",
+    "body": "È gratis e lo resta — se vuoi, una donazione libera aiuta a tenerlo vivo.",
+    "cta": "Sostieni",
+    "dismiss": "Nascondi per un mese"
+  },
   "common": {
     "back": "← Indietro",
     "edit": "Modifica",

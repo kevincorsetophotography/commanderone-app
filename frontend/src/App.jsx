@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 function RedirectWithSearch({ to }) {
   const { search } = useLocation()
@@ -122,10 +123,11 @@ function UserChip({ titleSize = 13, avatar = 26, hideLabel = false }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { t } = useTheme()
+  const { t: tr } = useTranslation()
   return (
     <span
       onClick={() => user?.id && navigate(`/giocatore/${user.id}`)}
-      title="Vai al tuo profilo"
+      title={tr('nav.goToProfile')}
       style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0, cursor: 'pointer' }}
     >
       <PlayerAvatar username={user?.username} avatarCardName={user?.avatarCardName} avatarScryfallId={user?.avatarScryfallId} size={avatar} highlight />
@@ -141,12 +143,13 @@ function UserChip({ titleSize = 13, avatar = 26, hideLabel = false }) {
 function GroupSwitcher() {
   const { groups, activeGroup, selectGroup } = useGroup()
   const { t } = useTheme()
+  const { t: tr } = useTranslation()
   if (!groups || groups.length <= 1) return null
   return (
     <select
       value={activeGroup?.slug || ''}
       onChange={e => selectGroup(e.target.value)}
-      title="Cambia gruppo"
+      title={tr('nav.switchGroup')}
       style={{
         padding: '6px 10px', borderRadius: 10, border: `1px solid ${t.border}`,
         background: t.bgSurfaceAlt, color: t.text, fontSize: 12, fontWeight: 600, cursor: 'pointer',
@@ -222,6 +225,7 @@ function Layout() {
   const { user, logout } = useAuth()
   const { activeGroup } = useGroup()
   const { t, dark, toggleDark } = useTheme()
+  const { t: tr } = useTranslation()
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   const isGroupAdmin = activeGroup?.role === 'ADMIN'
@@ -277,10 +281,10 @@ function Layout() {
                     padding: '6px 10px', borderRadius: 10, textDecoration: 'none', fontSize: 12, fontWeight: 600,
                     background: isActive ? t.primary : t.bgSurfaceAlt, color: isActive ? t.primaryFg : t.textSub,
                     border: `1px solid ${t.border}`,
-                  })}>Admin</NavLink>
+                  })}>{tr('nav.admin')}</NavLink>
                 )}
-                <IconButton onClick={toggleDark} title={dark ? 'Light mode' : 'Dark mode'}>{dark ? '☀' : '🌙'}</IconButton>
-                <IconButton onClick={() => navigate('/account')} title="Account">⚙</IconButton>
+                <IconButton onClick={toggleDark} title={dark ? tr('nav.lightMode') : tr('nav.darkMode')}>{dark ? '☀' : '🌙'}</IconButton>
+                <IconButton onClick={() => navigate('/account')} title={tr('account.title')}>⚙</IconButton>
                 <UserChip avatar={26} hideLabel />
               </div>
             </div>
@@ -291,20 +295,20 @@ function Layout() {
             <div style={{ maxWidth: 980, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 62, padding: '8px 0', gap: 12, flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <div style={{ marginRight: 8 }}><Brand /></div>
-                <NavItem to="/" end>Feed</NavItem>
-                <NavItem to="/gioca">Gioca</NavItem>
-                <NavItem to="/eventi">Eventi</NavItem>
-                <NavItem to="/gruppo">Gruppo</NavItem>
-                <NavItem to="/mazzi">Mazzi</NavItem>
-                {isGroupAdmin && <NavItem to="/admin">Admin</NavItem>}
+                <NavItem to="/" end>{tr('nav.feed')}</NavItem>
+                <NavItem to="/gioca">{tr('nav.gioca')}</NavItem>
+                <NavItem to="/eventi">{tr('nav.eventi')}</NavItem>
+                <NavItem to="/gruppo">{tr('nav.gruppo')}</NavItem>
+                <NavItem to="/mazzi">{tr('nav.mazzi')}</NavItem>
+                {isGroupAdmin && <NavItem to="/admin">{tr('nav.admin')}</NavItem>}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <GroupSwitcher />
                 <UserChip />
                 <NotificationBell />
-                <IconButton onClick={toggleDark} title={dark ? 'Passa a light mode' : 'Passa a dark mode'}>{dark ? '☀' : '🌙'}</IconButton>
-                <IconButton onClick={() => navigate('/account')} title="Impostazioni account">⚙</IconButton>
-                <IconButton onClick={logout} title="Esci">Esci</IconButton>
+                <IconButton onClick={toggleDark} title={dark ? tr('nav.lightModeLong') : tr('nav.darkModeLong')}>{dark ? '☀' : '🌙'}</IconButton>
+                <IconButton onClick={() => navigate('/account')} title={tr('nav.accountSettings')}>⚙</IconButton>
+                <IconButton onClick={logout} title={tr('nav.logout')}>{tr('nav.logout')}</IconButton>
               </div>
             </div>
           </div>
@@ -328,11 +332,11 @@ function Layout() {
           display: 'flex', gap: 4,
           padding: '6px 8px calc(6px + env(safe-area-inset-bottom)) 8px',
         }}>
-          <DockItem to="/" end icon={DOCK_ICONS.feed} label="Feed" />
-          <DockItem to="/gioca"  icon={DOCK_ICONS.gioca} label="Gioca" />
-          <DockItem to="/eventi" icon={DOCK_ICONS.eventi} label="Eventi" />
-          <DockItem to="/gruppo" icon={DOCK_ICONS.gruppo} label="Gruppo" />
-          <DockItem to={`/giocatore/${user?.id}`} icon={DOCK_ICONS.io} label="Io" />
+          <DockItem to="/" end icon={DOCK_ICONS.feed} label={tr('nav.feed')} />
+          <DockItem to="/gioca"  icon={DOCK_ICONS.gioca} label={tr('nav.gioca')} />
+          <DockItem to="/eventi" icon={DOCK_ICONS.eventi} label={tr('nav.eventi')} />
+          <DockItem to="/gruppo" icon={DOCK_ICONS.gruppo} label={tr('nav.gruppo')} />
+          <DockItem to={`/giocatore/${user?.id}`} icon={DOCK_ICONS.io} label={tr('nav.io')} />
         </div>
       )}
     </div>
@@ -340,13 +344,13 @@ function Layout() {
 }
 
 function FanContentDisclaimer({ t }) {
+  const { t: tr } = useTranslation()
   return (
     <div style={{ marginTop: 32, paddingTop: 16, borderTop: `1px solid ${t.border}`, fontSize: 10.5, color: t.textMuted, lineHeight: 1.5, textAlign: 'center' }}>
-      CommanderOne è Fan Content non ufficiale, permesso dalla Fan Content Policy di Wizards of the Coast.
-      Non è approvato/sostenuto da Wizards. Le porzioni di proprietà di Wizards sono ©Wizards of the Coast LLC.
+      {tr('app.fanContentDisclaimerFull')}
       <br />
-      <Link to="/privacy" style={{ color: t.textMuted }}>Privacy Policy</Link> · <Link to="/termini" style={{ color: t.textMuted }}>Termini di Servizio</Link>
-      {' '}· <a href={KOFI_URL} target="_blank" rel="noopener noreferrer" style={{ color: t.textMuted }}>☕ Sostieni il progetto</a>
+      <Link to="/privacy" style={{ color: t.textMuted }}>{tr('auth.register.privacyLink')}</Link> · <Link to="/termini" style={{ color: t.textMuted }}>{tr('auth.register.termsLink')}</Link>
+      {' '}· <a href={KOFI_URL} target="_blank" rel="noopener noreferrer" style={{ color: t.textMuted }}>{tr('app.supportLink')}</a>
     </div>
   )
 }
@@ -361,9 +365,10 @@ function PrivateRoute({ children }) {
 function GroupGate() {
   const { loading, groups } = useGroup()
   const { t } = useTheme()
+  const { t: tr } = useTranslation()
 
   if (loading) {
-    return <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.textSub }}>Caricamento…</div>
+    return <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.textSub }}>{tr('common.loading')}</div>
   }
   if (!groups || groups.length === 0) {
     return <OnboardingPage />
