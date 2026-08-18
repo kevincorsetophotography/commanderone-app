@@ -14,7 +14,7 @@ import { ARCHETYPE_OPTIONS } from '../lib/archetypes'
 import { BRACKETS, BRACKET_OPTIONS, bracketLabel } from '../lib/brackets'
 import { useCountUp } from '../hooks/useCountUp'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { listSeasons, computeStandings } from '../lib/seasons'
+import { listSeasons, computeStandings, seasonLabel } from '../lib/seasons'
 import { ordinal } from '../lib/ordinal'
 import PlayerAvatar from '../components/PlayerAvatar'
 
@@ -407,7 +407,7 @@ export default function DashboardPage() {
                   onChange={e => setSeasonKey(e.target.value)}
                   style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 14, fontWeight: 600, cursor: 'pointer', outline: 'none' }}
                 >
-                  {seasons.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                  {seasons.map(s => <option key={s.key} value={s.key}>{seasonLabel(s.key, tr)}</option>)}
                 </select>
                 <span style={{ fontSize: 12, color: t.textMuted }}>{tr('dashboardPage.seasonSummary', { total: season.total, threshold: season.threshold })}</span>
               </div>

@@ -11,7 +11,7 @@ import EmptyState from '../components/EmptyState'
 import DeckThumb from '../components/DeckThumb'
 import BracketBadge from '../components/BracketBadge'
 import GameSocial from '../components/GameSocial'
-import { listSeasons, computeStandings, seasonOf } from '../lib/seasons'
+import { listSeasons, computeStandings, seasonOf, seasonLabel } from '../lib/seasons'
 import { ordinal } from '../lib/ordinal'
 import PlayerAvatar from '../components/PlayerAvatar'
 import SeasonRecap from '../components/SeasonRecap'
@@ -333,7 +333,7 @@ export default function GruppoPage() {
                       onChange={e => { setSeasonKey(e.target.value); setShowRecap(false) }}
                       style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 14, fontWeight: 600, cursor: 'pointer', outline: 'none' }}
                     >
-                      {seasons.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                      {seasons.map(s => <option key={s.key} value={s.key}>{seasonLabel(s.key, tr)}</option>)}
                     </select>
                     <span style={{ fontSize: 12, color: t.textMuted, flex: 1 }}>{tr('gruppoPage.seasonSummary', { total: season.total, threshold: season.threshold })}</span>
                     {isCompleted && (

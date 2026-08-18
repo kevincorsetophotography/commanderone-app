@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../hooks/useAuth'
-import { seasonOf, computeStandings } from '../lib/seasons'
+import { seasonOf, computeStandings, seasonLabel as trSeasonLabel } from '../lib/seasons'
 import { Skeleton, SkeletonList } from '../components/Skeleton'
 import PlayerAvatar from '../components/PlayerAvatar'
 import SupportBanner from '../components/SupportBanner'
@@ -577,10 +577,10 @@ export default function FeedPage() {
     const { standings } = computeStandings(games, currentSeasonKey)
     const myStanding = standings.find(s => s.id === user.id)
     const myRank = myStanding ? standings.indexOf(myStanding) + 1 : null
-    const seasonLabel = seasonOf(new Date()).label
+    const seasonLabel = trSeasonLabel(currentSeasonKey, tr)
 
     return { total, wins, streak, myStanding, myRank, seasonLabel }
-  }, [games, user])
+  }, [games, user, tr])
 
   // ── prossimo evento ──
   const nextEvent = useMemo(() => {

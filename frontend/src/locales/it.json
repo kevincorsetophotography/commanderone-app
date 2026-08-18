@@ -146,6 +146,13 @@
     "cta": "Sostieni",
     "dismiss": "Nascondi per un mese"
   },
+  "seasons": {
+    "months": {
+      "0": "Gennaio–Aprile",
+      "1": "Maggio–Agosto",
+      "2": "Settembre–Dicembre"
+    }
+  },
   "common": {
     "back": "← Indietro",
     "edit": "Modifica",
