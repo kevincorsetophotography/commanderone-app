@@ -448,6 +448,64 @@
     "saving": "Salvataggio...",
     "saveGame": "Salva partita"
   },
+  "seasonRecap": {
+    "slide1": {
+      "eyebrow": "RECAP STAGIONE",
+      "tagline": "La stagione è appena finita. E questa è la nostra leggenda.",
+      "championLabel": "CAMPIONE STAGIONALE",
+      "championStats": "{{wins}} vittorie · {{pct}}% win rate",
+      "podiumStats": "{{points}} pt · {{wins}} vitt.",
+      "statGames": "PARTITE",
+      "statPlayers": "GIOCATORI",
+      "statDecks": "DECK",
+      "footer": "GRAZIE A TUTTI I GIOCATORI PER QUESTA STAGIONE <incredible>INCREDIBILE</incredible>!"
+    },
+    "slide2": {
+      "titleEyebrow": "LA STAGIONE",
+      "titleMain": "IN NUMERI",
+      "statGames": "PARTITE\nDISPUTATE",
+      "statPlayers": "GIOCATORI\nATTIVI",
+      "statDecks": "DECK\nREGISTRATI",
+      "statParticipation": "PARTECIPAZIONE\nMEDIA",
+      "statStreak": "STREAK\nRECORD",
+      "statEliminations": "ELIMINAZIONI\nTOTALI"
+    },
+    "slide3": {
+      "title": "HALL OF FAME",
+      "subtitle": "I PROTAGONISTI DELLA STAGIONE",
+      "awardMostWins": "PIÙ VITTORIE",
+      "awardMostGames": "PIÙ PRESENTE",
+      "awardBestWinRate": "MIGLIOR WIN",
+      "awardMostRuthless": "PIÙ SPIETATO",
+      "awardStreak": "STREAK",
+      "awardMostConsistent": "PIÙ COSTANTE",
+      "awardWinsStat": "{{count}} vitt.",
+      "awardGamesStat": "{{count}} gg",
+      "awardKillsStat": "{{count}} kill",
+      "awardStreakStat": "{{count}} vitt. di fila",
+      "awardConsistentStat": "{{value}} pt/gg",
+      "deckOfSeason": "🃏 DECK DELLA STAGIONE",
+      "thanksCommunity": "GRAZIE A TUTTA LA COMMUNITY!",
+      "seeYouNextSeason": "Ci vediamo alla prossima stagione!",
+      "discoverMore": "SCOPRI DI PIÙ"
+    },
+    "modal": {
+      "title": "Carousel Instagram",
+      "dimensions": "3 slide · {{w}}×{{h}}px · 4:5",
+      "downloading": "⏳ Download…",
+      "loadingImages": "⏳ Caricamento…",
+      "downloadAll": "⬇ Scarica Tutte",
+      "slide1Title": "Slide 1 — Chi ha dominato?",
+      "slide1Sub": "Campione + podio",
+      "slide2Title": "Slide 2 — La stagione in numeri",
+      "slide2Sub": "Stats chiave",
+      "slide3Title": "Slide 3 — Hall of Fame",
+      "slide3Sub": "Premi + QR code",
+      "downloadingShort": "⏳…",
+      "downloadPng": "⬇ PNG",
+      "tapToClose": "Tocca fuori per chiudere"
+    }
+  },
   "gamePage": {
     "notFound": "Partita non trovata",
     "notFoundMessage": "Questa partita non esiste.",

@@ -448,6 +448,64 @@
     "saving": "Saving...",
     "saveGame": "Save game"
   },
+  "seasonRecap": {
+    "slide1": {
+      "eyebrow": "SEASON RECAP",
+      "tagline": "The season just ended. And this is our legend.",
+      "championLabel": "SEASON CHAMPION",
+      "championStats": "{{wins}} wins · {{pct}}% win rate",
+      "podiumStats": "{{points}} pt · {{wins}} wins",
+      "statGames": "GAMES",
+      "statPlayers": "PLAYERS",
+      "statDecks": "DECKS",
+      "footer": "THANKS TO ALL PLAYERS FOR THIS <incredible>INCREDIBLE</incredible> SEASON!"
+    },
+    "slide2": {
+      "titleEyebrow": "THE SEASON",
+      "titleMain": "IN NUMBERS",
+      "statGames": "GAMES\nPLAYED",
+      "statPlayers": "ACTIVE\nPLAYERS",
+      "statDecks": "DECKS\nREGISTERED",
+      "statParticipation": "AVERAGE\nTURNOUT",
+      "statStreak": "STREAK\nRECORD",
+      "statEliminations": "TOTAL\nELIMINATIONS"
+    },
+    "slide3": {
+      "title": "HALL OF FAME",
+      "subtitle": "THE SEASON'S PROTAGONISTS",
+      "awardMostWins": "MOST WINS",
+      "awardMostGames": "MOST GAMES",
+      "awardBestWinRate": "BEST WIN RATE",
+      "awardMostRuthless": "MOST RUTHLESS",
+      "awardStreak": "STREAK",
+      "awardMostConsistent": "MOST CONSISTENT",
+      "awardWinsStat": "{{count}} wins",
+      "awardGamesStat": "{{count}} games",
+      "awardKillsStat": "{{count}} kills",
+      "awardStreakStat": "{{count}} wins in a row",
+      "awardConsistentStat": "{{value}} pt/game",
+      "deckOfSeason": "🃏 DECK OF THE SEASON",
+      "thanksCommunity": "THANKS TO THE WHOLE COMMUNITY!",
+      "seeYouNextSeason": "See you next season!",
+      "discoverMore": "FIND OUT MORE"
+    },
+    "modal": {
+      "title": "Instagram Carousel",
+      "dimensions": "3 slides · {{w}}×{{h}}px · 4:5",
+      "downloading": "⏳ Downloading…",
+      "loadingImages": "⏳ Loading…",
+      "downloadAll": "⬇ Download All",
+      "slide1Title": "Slide 1 — Who dominated?",
+      "slide1Sub": "Champion + podium",
+      "slide2Title": "Slide 2 — The season in numbers",
+      "slide2Sub": "Key stats",
+      "slide3Title": "Slide 3 — Hall of Fame",
+      "slide3Sub": "Awards + QR code",
+      "downloadingShort": "⏳…",
+      "downloadPng": "⬇ PNG",
+      "tapToClose": "Tap outside to close"
+    }
+  },
   "gamePage": {
     "notFound": "Game not found",
     "notFoundMessage": "This game doesn't exist.",
