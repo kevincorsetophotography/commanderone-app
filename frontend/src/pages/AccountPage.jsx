@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useGroup } from '../hooks/useGroup'
 import { useTheme } from '../hooks/useTheme'
 import GroupJoinCreateForm from '../components/GroupJoinCreateForm'
+import { KOFI_URL } from '../lib/links'
 
 // Impostazioni account: email + stato verifica, cambio password, gruppi, logout.
 export default function AccountPage() {
@@ -210,6 +211,22 @@ export default function AccountPage() {
         }}>
           Esci dall'account
         </button>
+      </div>
+
+      <div style={card}>
+        <div style={label}>Sostieni il progetto</div>
+        <div style={{ fontSize: 13, color: t.textSub, marginBottom: 12, lineHeight: 1.5 }}>
+          CommanderOne è gratuito e lo resta per tutte le funzioni di gioco — nessuna donazione
+          sblocca niente. Se ti piace usarlo, una donazione libera su Ko-fi aiuta a coprire i costi
+          e a continuare a svilupparlo.
+        </div>
+        <a href={KOFI_URL} target="_blank" rel="noopener noreferrer" style={{
+          display: 'inline-block', padding: '10px 18px', borderRadius: 11,
+          background: t.accent, color: '#1a1206', fontSize: 14, fontWeight: 700,
+          textDecoration: 'none',
+        }}>
+          ☕ Offrimi un caffè su Ko-fi
+        </a>
       </div>
 
       <div style={{ ...card, border: `1px solid ${t.dangerBorder || t.danger}` }}>

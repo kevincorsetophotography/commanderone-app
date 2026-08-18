@@ -33,6 +33,7 @@ import PrivacyPage from './pages/PrivacyPage'
 import TermsPage from './pages/TermsPage'
 import NotificationBell from './components/NotificationBell'
 import PlayerAvatar from './components/PlayerAvatar'
+import { KOFI_URL } from './lib/links'
 
 function NavItem({ to, end, children }) {
   const { t } = useTheme()
@@ -345,6 +346,7 @@ function FanContentDisclaimer({ t }) {
       Non è approvato/sostenuto da Wizards. Le porzioni di proprietà di Wizards sono ©Wizards of the Coast LLC.
       <br />
       <Link to="/privacy" style={{ color: t.textMuted }}>Privacy Policy</Link> · <Link to="/termini" style={{ color: t.textMuted }}>Termini di Servizio</Link>
+      {' '}· <a href={KOFI_URL} target="_blank" rel="noopener noreferrer" style={{ color: t.textMuted }}>☕ Sostieni il progetto</a>
     </div>
   )
 }
