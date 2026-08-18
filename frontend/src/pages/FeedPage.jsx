@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../hooks/useAuth'
@@ -7,21 +8,18 @@ import { seasonOf, computeStandings } from '../lib/seasons'
 import { Skeleton, SkeletonList } from '../components/Skeleton'
 import PlayerAvatar from '../components/PlayerAvatar'
 import SupportBanner from '../components/SupportBanner'
+import { ordinal } from '../lib/ordinal'
 
 // ─── helpers ──────────────────────────────────────────────
 
-function relativeDate(date) {
+function relativeDate(date, tr, locale) {
   const now = new Date()
   const d = new Date(date)
   const diffDays = Math.floor((now - d) / 86400000)
-  if (diffDays === 0) return 'Oggi'
-  if (diffDays === 1) return 'Ieri'
-  if (diffDays < 7) return `${diffDays} gg fa`
-  return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })
-}
-
-function ordinal(n) {
-  return `${n}°`
+  if (diffDays === 0) return tr('feed.today')
+  if (diffDays === 1) return tr('feed.yesterday')
+  if (diffDays < 7) return tr('feed.daysAgo', { count: diffDays })
+  return d.toLocaleDateString(locale, { day: '2-digit', month: 'short' })
 }
 
 const artUrl = name =>
@@ -37,7 +35,7 @@ function WinBar({ pct, t }) {
   )
 }
 
-function SnapshotCard({ snapshot, t, user, navigate }) {
+function SnapshotCard({ snapshot, t, tr, locale, user, navigate }) {
   if (!snapshot) return null
   const { total, wins, streak, myStanding, myRank, seasonLabel } = snapshot
   const winPct = total ? Math.round(wins / total * 100) : 0
@@ -58,7 +56,7 @@ function SnapshotCard({ snapshot, t, user, navigate }) {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
         <div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: t.text }}>Ciao, {user?.username}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: t.text }}>{tr('feed.greeting', { username: user?.username })}</div>
           <div style={{ fontSize: 13, color: t.textSub, marginTop: 2 }}>{seasonLabel}</div>
         </div>
         {myRank && (
@@ -71,7 +69,7 @@ function SnapshotCard({ snapshot, t, user, navigate }) {
               lineHeight: 1,
             }}
           >
-            {ordinal(myRank)}
+            {ordinal(myRank, locale)}
           </button>
         )}
       </div>
@@ -79,11 +77,11 @@ function SnapshotCard({ snapshot, t, user, navigate }) {
       {total > 0 ? (
         <>
           <div style={{ fontSize: 13, color: t.textSub, marginTop: 8 }}>
-            {myStanding ? `${myStanding.points} pt · ` : ''}
-            {wins} {wins === 1 ? 'vittoria' : 'vittorie'} su {total}
+            {myStanding ? tr('feed.pointsPrefix', { points: myStanding.points }) : ''}
+            {tr('feed.winsCount', { count: wins, total })}
             {streak >= 2 && (
               <span style={{ marginLeft: 10, color: t.primary, fontWeight: 700 }}>
-                Streak {streak}
+                {tr('feed.streak', { count: streak })}
               </span>
             )}
           </div>
@@ -91,15 +89,15 @@ function SnapshotCard({ snapshot, t, user, navigate }) {
         </>
       ) : (
         <div style={{ fontSize: 13, color: t.textMuted, marginTop: 8 }}>
-          Ancora nessuna partita questa stagione.
+          {tr('feed.noGamesThisSeason')}
         </div>
       )}
     </div>
   )
 }
 
-function EventBanner({ event, t, navigate }) {
-  const dateStr = new Date(event.startsAt).toLocaleDateString('it-IT', {
+function EventBanner({ event, t, tr, locale, navigate }) {
+  const dateStr = new Date(event.startsAt).toLocaleDateString(locale, {
     weekday: 'long', day: 'numeric', month: 'long',
   })
   const rsvpCount = event.rsvps?.length || 0
@@ -121,13 +119,13 @@ function EventBanner({ event, t, navigate }) {
     >
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 11, color: t.primary, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
-          Prossimo evento
+          {tr('feed.nextEvent')}
         </div>
         <div style={{ fontSize: 15, fontWeight: 700, color: t.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {event.title}
         </div>
         <div style={{ fontSize: 12, color: t.textSub, marginTop: 3 }}>
-          {dateStr}{rsvpCount > 0 ? ` · ${rsvpCount} iscritti` : ''}
+          {dateStr}{rsvpCount > 0 ? ` · ${tr('feed.rsvpCount', { count: rsvpCount })}` : ''}
         </div>
       </div>
       <span style={{ fontSize: 20, color: t.primary, fontWeight: 700, flexShrink: 0, marginLeft: 12 }}>›</span>
@@ -137,7 +135,7 @@ function EventBanner({ event, t, navigate }) {
 
 // ─── NUOVI COMPONENTI ──────────────────────────────────────
 
-function MiniClassifica({ standings, t, navigate }) {
+function MiniClassifica({ standings, t, tr, navigate }) {
   if (!standings.length) return null
   const maxPts = standings[0]?.points || 1
   const MEDALS = ['🥇', '🥈', '🥉']
@@ -160,13 +158,13 @@ function MiniClassifica({ standings, t, navigate }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#f5c518', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-          🏆 Stagione corrente
+          🏆 {tr('feed.currentSeason')}
         </span>
         <button
           onClick={() => navigate('/gruppo')}
           style={{ fontSize: 11, color: t.primary, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, padding: 0 }}
         >
-          Vedi classifica ›
+          {tr('feed.viewStandings')}
         </button>
       </div>
 
@@ -201,7 +199,7 @@ function MiniClassifica({ standings, t, navigate }) {
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div style={{ fontSize: 18, fontWeight: 900, color: i === 0 ? '#f5c518' : t.text, lineHeight: 1 }}>{s.points}</div>
-              <div style={{ fontSize: 10, color: t.textMuted }}>pt</div>
+              <div style={{ fontSize: 10, color: t.textMuted }}>{tr('feed.points')}</div>
             </div>
           </div>
         ))}
@@ -210,7 +208,7 @@ function MiniClassifica({ standings, t, navigate }) {
   )
 }
 
-function DeckSpotlight({ spotlight, t, navigate }) {
+function DeckSpotlight({ spotlight, t, tr, navigate }) {
   if (!spotlight) return null
 
   return (
@@ -257,10 +255,10 @@ function DeckSpotlight({ spotlight, t, navigate }) {
             padding: '3px 10px', borderRadius: 20,
             border: '1px solid rgba(255,255,255,0.18)',
           }}>
-            ✦ Deck Spotlight
+            ✦ {tr('feed.deckSpotlight')}
           </span>
           <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
-            ultimi 10 giorni
+            {tr('feed.last10Days')}
           </span>
         </div>
 
@@ -280,7 +278,7 @@ function DeckSpotlight({ spotlight, t, navigate }) {
               </div>
             )}
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
-              di {spotlight.owner} · {spotlight.recentGames} partite (10 gg)
+              {tr('feed.spotlightStats', { owner: spotlight.owner, count: spotlight.recentGames })}
             </div>
           </div>
 
@@ -295,7 +293,7 @@ function DeckSpotlight({ spotlight, t, navigate }) {
               {spotlight.recentWinRate}%
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 1, letterSpacing: '0.04em' }}>
-              win rate
+              {tr('feed.winRate')}
             </div>
           </div>
         </div>
@@ -304,11 +302,11 @@ function DeckSpotlight({ spotlight, t, navigate }) {
   )
 }
 
-function WeeklyActivity({ activity, t }) {
+function WeeklyActivity({ activity, t, tr }) {
   if (activity.count === 0 && activity.lastWeekCount === 0) return null
   const diff = activity.count - activity.lastWeekCount
   const trendColor = diff > 0 ? t.win : diff < 0 ? t.danger || '#f87171' : t.textSub
-  const trendLabel = diff > 0 ? `↑ +${diff} vs scorsa` : diff < 0 ? `↓ ${diff} vs scorsa` : '→ come la scorsa'
+  const trendLabel = diff > 0 ? tr('feed.trendUp', { diff }) : diff < 0 ? tr('feed.trendDown', { diff }) : tr('feed.trendSame')
 
   return (
     <div
@@ -323,11 +321,11 @@ function WeeklyActivity({ activity, t }) {
       {/* Metrica */}
       <div style={{ flexShrink: 0 }}>
         <div style={{ fontSize: 10, fontWeight: 800, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>
-          ⚡ Settimana
+          ⚡ {tr('feed.week')}
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
           <span style={{ fontSize: 36, fontWeight: 900, color: t.text, lineHeight: 1 }}>{activity.count}</span>
-          <span style={{ fontSize: 12, color: t.textSub, lineHeight: 1 }}>partite</span>
+          <span style={{ fontSize: 12, color: t.textSub, lineHeight: 1 }}>{tr('feed.weekGamesLabel', { count: activity.count })}</span>
         </div>
         <div style={{ fontSize: 11, fontWeight: 700, color: trendColor, marginTop: 3 }}>{trendLabel}</div>
       </div>
@@ -359,8 +357,8 @@ function WeeklyActivity({ activity, t }) {
 
       {/* Labels giorni (ieri/oggi) */}
       <div style={{ flexShrink: 0, textAlign: 'center', fontSize: 10, color: t.textMuted, lineHeight: 1.8 }}>
-        <div>ieri</div>
-        <div style={{ color: t.primary, fontWeight: 700 }}>oggi</div>
+        <div>{tr('feed.weekYesterday')}</div>
+        <div style={{ color: t.primary, fontWeight: 700 }}>{tr('feed.weekToday')}</div>
       </div>
     </div>
   )
@@ -368,7 +366,7 @@ function WeeklyActivity({ activity, t }) {
 
 // ─── Feed items ────────────────────────────────────────────
 
-function GameFeedItem({ game, user, t, navigate }) {
+function GameFeedItem({ game, user, t, tr, locale, navigate }) {
   const me = game.players.find(p => p.user.id === user?.id)
   const winner = game.players.find(p => p.isWinner)
   const iWon = !!me?.isWinner
@@ -420,12 +418,12 @@ function GameFeedItem({ game, user, t, navigate }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>
           {iWon
-            ? <span style={{ color: t.win }}>Hai vinto!</span>
+            ? <span style={{ color: t.win }}>{tr('feed.wonGame')}</span>
             : <>
                 <span style={{ color: iPlayed ? t.primary : t.text }}>
                   {winner?.user?.username || '?'}
                 </span>
-                <span style={{ color: t.textSub, fontWeight: 400 }}> ha vinto</span>
+                <span style={{ color: t.textSub, fontWeight: 400 }}>{tr('feed.wonSuffix')}</span>
               </>
           }
         </div>
@@ -436,16 +434,16 @@ function GameFeedItem({ game, user, t, navigate }) {
         )}
         <div style={{ fontSize: 11, color: t.textSub, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {iWon
-            ? (others ? `Con ${others}` : '')
+            ? (others ? tr('feed.withOthers', { others }) : '')
             : iPlayed
-              ? (others ? `Con ${others}` : '')
+              ? (others ? tr('feed.withOthers', { others }) : '')
               : allPlayers
           }
         </div>
       </div>
 
       <span style={{ fontSize: 11, color: t.textMuted, flexShrink: 0, alignSelf: 'flex-start', marginTop: 2 }}>
-        {relativeDate(game.playedAt)}
+        {relativeDate(game.playedAt, tr, locale)}
       </span>
     </div>
   )
@@ -465,7 +463,7 @@ const NOTIF_TYPE_COLOR = {
   achievement: 'rgba(250,204,21,0.85)',
 }
 
-function NotifFeedItem({ notif, t, navigate }) {
+function NotifFeedItem({ notif, t, tr, locale, navigate }) {
   const isUnread = !notif.read
   const isSocial = notif.type === 'comment' || notif.type === 'reaction'
   const avatarUser = notif.fromUser || (isSocial ? { username: parseUsernameFromTitle(notif), avatarCardName: null, avatarScryfallId: null } : null)
@@ -522,7 +520,7 @@ function NotifFeedItem({ notif, t, navigate }) {
         )}
       </div>
       <span style={{ fontSize: 11, color: t.textMuted, flexShrink: 0, alignSelf: 'flex-start', marginTop: 2 }}>
-        {relativeDate(notif.createdAt)}
+        {relativeDate(notif.createdAt, tr, locale)}
       </span>
     </div>
   )
@@ -532,6 +530,8 @@ function NotifFeedItem({ notif, t, navigate }) {
 
 export default function FeedPage() {
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -699,25 +699,25 @@ export default function FeedPage() {
       <SupportBanner />
 
       {/* 1 — Snapshot personale */}
-      <SnapshotCard snapshot={snapshot} t={t} user={user} navigate={navigate} />
+      <SnapshotCard snapshot={snapshot} t={t} tr={tr} locale={locale} user={user} navigate={navigate} />
 
       {/* 2 — Prossimo evento */}
-      {nextEvent && <EventBanner event={nextEvent} t={t} navigate={navigate} />}
+      {nextEvent && <EventBanner event={nextEvent} t={t} tr={tr} locale={locale} navigate={navigate} />}
 
       {/* 3 — Mini classifica stagionale */}
-      <MiniClassifica standings={topStandings} t={t} navigate={navigate} />
+      <MiniClassifica standings={topStandings} t={t} tr={tr} navigate={navigate} />
 
       {/* 4 — Deck Spotlight */}
-      <DeckSpotlight spotlight={spotlight} t={t} navigate={navigate} />
+      <DeckSpotlight spotlight={spotlight} t={t} tr={tr} navigate={navigate} />
 
       {/* 5 — Attività settimanale */}
-      <WeeklyActivity activity={weeklyActivity} t={t} />
+      <WeeklyActivity activity={weeklyActivity} t={t} tr={tr} />
 
       {/* 6 — Feed attività recente */}
       {feedItems.length > 0 ? (
         <>
           <div style={{ fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10, marginTop: 4 }}>
-            Attività recente
+            {tr('feed.recentActivity')}
           </div>
           {feedItems.map((item, index) => (
             <div
@@ -726,15 +726,15 @@ export default function FeedPage() {
               style={{ animationDelay: `${(Math.min(index, 8) * 40) + 240}ms` }}
             >
               {item.type === 'game'
-                ? <GameFeedItem game={item.data} user={user} t={t} navigate={navigate} />
-                : <NotifFeedItem notif={item.data} t={t} navigate={navigate} />
+                ? <GameFeedItem game={item.data} user={user} t={t} tr={tr} locale={locale} navigate={navigate} />
+                : <NotifFeedItem notif={item.data} t={t} tr={tr} locale={locale} navigate={navigate} />
               }
             </div>
           ))}
         </>
       ) : (
         <div style={{ textAlign: 'center', padding: '3rem 1rem', color: t.textMuted, fontSize: 14 }}>
-          Ancora nessuna attività. Registra la prima partita!
+          {tr('feed.emptyFeed')}
         </div>
       )}
     </div>
