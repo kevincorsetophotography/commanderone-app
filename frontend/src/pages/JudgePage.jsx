@@ -1,20 +1,22 @@
 ﻿import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../hooks/useAuth'
 import PlayerAvatar from '../components/PlayerAvatar'
 
 function ConfidenceBadge({ value }) {
+  const { t: tr } = useTranslation()
   const pct = Math.round(value * 100)
   const color = value >= 0.85 ? '#4caf50' : value >= 0.6 ? '#ff9800' : '#f44336'
-  const label = value >= 0.85 ? 'Alta' : value >= 0.6 ? 'Media' : 'Bassa'
+  const label = value >= 0.85 ? tr('judgePage.confidenceHigh') : value >= 0.6 ? tr('judgePage.confidenceMedium') : tr('judgePage.confidenceLow')
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
       background: color + '20', color, border: `1px solid ${color}50`
     }}>
-      Confidenza {label} · {pct}%
+      {tr('judgePage.confidenceBadge', { label, pct })}
     </span>
   )
 }
@@ -34,8 +36,10 @@ function Tag({ children, color }) {
 }
 
 function HistoryItem({ item, t }) {
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const [open, setOpen] = useState(false)
-  const date = new Date(item.createdAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })
+  const date = new Date(item.createdAt).toLocaleDateString(locale, { day: '2-digit', month: 'short' })
   const pct = Math.round(item.confidence * 100)
   const confColor = item.confidence >= 0.85 ? '#4caf50' : item.confidence >= 0.6 ? '#ff9800' : '#f44336'
 
@@ -62,7 +66,7 @@ function HistoryItem({ item, t }) {
             <span>·</span>
             <span>{date}</span>
             {item.llmUsed === false ? (
-              <span title="Solo fonti ufficiali, senza sintesi AI">📚</span>
+              <span title={tr('judgePage.officialOnlyShort')}>📚</span>
             ) : (
               <>
                 <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: confColor, flexShrink: 0 }} />
@@ -91,6 +95,7 @@ function HistoryItem({ item, t }) {
 
 export default function JudgePage() {
   const { t } = useTheme()
+  const { t: tr } = useTranslation()
   const { user } = useAuth()
   const [question, setQuestion]   = useState('')
   const [result, setResult]       = useState(null)
@@ -107,7 +112,7 @@ export default function JudgePage() {
 
   const ask = async () => {
     const q = question.trim()
-    if (!q || q.length < 5) { setError('Scrivi almeno una domanda completa.'); return }
+    if (!q || q.length < 5) { setError(tr('judgePage.tooShort')); return }
     setLoading(true); setError(''); setResult(null); setShowSources(false)
     try {
       const data = await api.askJudge(q)
@@ -119,7 +124,7 @@ export default function JudgePage() {
         user: { username: user?.username || 'Tu', avatarCardName: user?.avatarCardName || null, avatarScryfallId: user?.avatarScryfallId || null }
       }, ...prev.slice(0, 29)])
     } catch (err) {
-      setError(err.error || 'Errore durante la consulenza. Riprova.')
+      setError(err.error || tr('judgePage.askError'))
     } finally {
       setLoading(false)
     }
@@ -156,23 +161,22 @@ export default function JudgePage() {
   return (
     <div>
       <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: t.text }}>
-        Judge Bot
+        {tr('judgePage.title')}
       </div>
       <div style={{ fontSize: 13, color: t.textSub, marginBottom: '1.5rem' }}>
-        Fai una domanda sulle regole di Magic: The Gathering Commander.
-        Le risposte si basano su oracle text Scryfall e Comprehensive Rules.
+        {tr('judgePage.subtitle')}
       </div>
 
       {/* Domanda */}
       <div style={{ ...glass, marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 500, color: t.textSub, marginBottom: 8 }}>
-          La tua domanda <span style={{ fontWeight: 400 }}>(Ctrl+Invio per inviare)</span>
+          {tr('judgePage.questionLabel')} <span style={{ fontWeight: 400 }}>{tr('judgePage.questionHint')}</span>
         </div>
         <textarea
           value={question}
           onChange={e => setQuestion(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="Es: Posso rispondere con una contromagia a una copia creata da Storm? Come funziona Rhystic Study se un avversario paga {1}?"
+          placeholder={tr('judgePage.questionPlaceholder')}
           rows={4}
           style={inputSt}
           disabled={loading}
@@ -184,14 +188,14 @@ export default function JudgePage() {
         )}
         <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
           <button style={btnPrimary} onClick={ask} disabled={loading}>
-            {loading ? '⏳ Il judge sta consultando le regole...' : '⚖ Chiedi al Judge'}
+            {loading ? tr('judgePage.asking') : tr('judgePage.askButton')}
           </button>
           {result && !loading && (
             <button
               style={{ padding: '10px 16px', background: 'transparent', color: t.textSub, border: `1px solid ${t.border}`, borderRadius: 9, fontSize: 13, cursor: 'pointer' }}
               onClick={() => { setResult(null); setQuestion('') }}
             >
-              Nuova domanda
+              {tr('judgePage.newQuestion')}
             </button>
           )}
         </div>
@@ -203,7 +207,7 @@ export default function JudgePage() {
 
           <div style={{ ...glass, marginBottom: 12, borderLeft: `3px solid ${t.primary}` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: t.primary }}>Ruling</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: t.primary }}>{tr('judgePage.rulingLabel')}</span>
               {result.llmUsed !== false ? (
                 <ConfidenceBadge value={result.confidence} />
               ) : (
@@ -211,8 +215,8 @@ export default function JudgePage() {
                   display: 'inline-flex', alignItems: 'center', gap: 5,
                   padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
                   background: t.bgMuted, color: t.textSub, border: `1px solid ${t.border}`,
-                }} title="Solo fonti ufficiali (oracle text, ruling, regole), senza sintesi AI">
-                  📚 Solo fonti ufficiali
+                }} title={tr('judgePage.officialOnlyTitle')}>
+                  {tr('judgePage.officialOnlyBadge')}
                 </span>
               )}
             </div>
@@ -223,7 +227,7 @@ export default function JudgePage() {
 
           {result.explanation && (
             <div style={{ ...glass, marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: t.textSub, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Spiegazione</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: t.textSub, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tr('judgePage.explanation')}</div>
               <div style={{ fontSize: 14, color: t.text, lineHeight: 1.7 }}>{result.explanation}</div>
             </div>
           )}
@@ -233,7 +237,7 @@ export default function JudgePage() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                 {result.cardsDetected?.length > 0 && (
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: t.textSub, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Carte rilevate</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: t.textSub, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tr('judgePage.cardsDetected')}</div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       {result.cardsDetected.map(c => <Tag key={c} color={t.primary}>{c}</Tag>)}
                     </div>
@@ -241,7 +245,7 @@ export default function JudgePage() {
                 )}
                 {result.rulesUsed?.length > 0 && (
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: t.textSub, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Regole citate</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: t.textSub, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tr('judgePage.rulesUsed')}</div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       {result.rulesUsed.map(r => <Tag key={r}>CR {r}</Tag>)}
                     </div>
@@ -258,7 +262,7 @@ export default function JudgePage() {
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6, color: t.textSub, fontSize: 13, fontWeight: 600 }}
               >
                 <span style={{ fontSize: 11, transition: 'transform 0.2s', display: 'inline-block', transform: showSources ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-                Fonti usate ({result.sources.length})
+                {tr('judgePage.sourcesUsed', { count: result.sources.length })}
               </button>
               {showSources && (
                 <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -274,7 +278,7 @@ export default function JudgePage() {
           )}
 
           <div style={{ marginTop: 12, marginBottom: 24, fontSize: 12, color: t.textMuted, textAlign: 'center' }}>
-            Le risposte del judge bot sono orientative. Per decisioni ufficiali consulta sempre un judge certificato.
+            {tr('judgePage.disclaimer')}
           </div>
         </div>
       )}
@@ -283,7 +287,7 @@ export default function JudgePage() {
       {history.length > 0 && (
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: t.text, marginBottom: 10, marginTop: result ? 0 : 8 }}>
-            Domande recenti del gruppo
+            {tr('judgePage.recentQuestions')}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {history.map((item, i) => (
