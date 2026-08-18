@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth'
 import { seasonOf, computeStandings } from '../lib/seasons'
 import { Skeleton, SkeletonList } from '../components/Skeleton'
 import PlayerAvatar from '../components/PlayerAvatar'
+import SupportBanner from '../components/SupportBanner'
 
 // ─── helpers ──────────────────────────────────────────────
 
@@ -694,6 +695,8 @@ export default function FeedPage() {
 
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
+
+      <SupportBanner />
 
       {/* 1 — Snapshot personale */}
       <SnapshotCard snapshot={snapshot} t={t} user={user} navigate={navigate} />
