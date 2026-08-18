@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -10,16 +11,15 @@ import CommanderInput from '../components/CommanderInput'
 import { SkeletonList } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import BracketBadge from '../components/BracketBadge'
-import { BRACKETS, BRACKET_OPTIONS } from '../lib/brackets'
+import { BRACKETS, BRACKET_OPTIONS, bracketLabel } from '../lib/brackets'
 import ArchetypeBadge from '../components/ArchetypeBadge'
 import { ARCHETYPE_OPTIONS } from '../lib/archetypes'
 
-const COLOR_MAP   = { W: '#f5f0e0', U: '#b8d4e8', B: '#c8b8d8', R: '#e8c0b0', G: '#b8d8b8' }
-const COLOR_LABEL = { W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde' }
+const COLOR_MAP = { W: '#f5f0e0', U: '#b8d4e8', B: '#c8b8d8', R: '#e8c0b0', G: '#b8d8b8' }
 
-function ColorPip({ c }) {
+function ColorPip({ c, tr }) {
   return (
-    <span title={COLOR_LABEL[c]} style={{
+    <span title={tr(`colors.${c}`)} style={{
       display: 'inline-block', width: 18, height: 18, borderRadius: '50%',
       background: COLOR_MAP[c] || '#eee', border: '1px solid rgba(0,0,0,0.15)',
       fontSize: 10, lineHeight: '18px', textAlign: 'center', fontWeight: 600, color: '#444'
@@ -32,6 +32,7 @@ const commanderArtUrl = (name) =>
 
 export default function DecksPage() {
   const { t } = useTheme()
+  const { t: tr } = useTranslation()
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   const { toast, confirm } = useFeedback()
@@ -45,7 +46,7 @@ export default function DecksPage() {
 
   const loadDecks = async () => {
     try { setDecks(await api.getMyDecks()) }
-    catch { setError('Errore nel caricamento mazzi') }
+    catch { setError(tr('decksPage.loadError')) }
     finally { setLoading(false) }
   }
 
@@ -66,15 +67,15 @@ export default function DecksPage() {
 
   const submit = async (e) => {
     e.preventDefault()
-    if (!form.name.trim()) { setFormError('Il nome è obbligatorio'); return }
+    if (!form.name.trim()) { setFormError(tr('decksPage.nameRequired')); return }
     setSaving(true); setFormError('')
     try {
       await api.createDeck({ name: form.name.trim(), commander: form.commander.trim() || null, colors: form.colors.join('') || null, bracket: form.bracket || null, archetype: form.archetype || null })
       setForm({ name: '', commander: '', colors: [], bracket: '', archetype: '' })
       await loadDecks()
-      toast('Mazzo aggiunto', 'success')
+      toast(tr('decksPage.deckAdded'), 'success')
     } catch (err) {
-      setFormError(err.error || 'Errore nel salvataggio')
+      setFormError(err.error || tr('decksPage.saveError'))
     } finally { setSaving(false) }
   }
 
@@ -82,9 +83,9 @@ export default function DecksPage() {
     try {
       await api.updateDeck(id, { bracket: bracket || null })
       await loadDecks()
-      toast('Livello aggiornato', 'success')
+      toast(tr('decksPage.levelUpdated'), 'success')
     } catch (err) {
-      toast(err.error || 'Errore aggiornamento livello', 'error')
+      toast(err.error || tr('decksPage.levelUpdateError'), 'error')
     }
   }
 
@@ -92,26 +93,26 @@ export default function DecksPage() {
     try {
       await api.updateDeck(id, { archetype: archetype || null })
       await loadDecks()
-      toast('Archetipo aggiornato', 'success')
+      toast(tr('decksPage.archetypeUpdated'), 'success')
     } catch (err) {
-      toast(err.error || 'Errore aggiornamento archetipo', 'error')
+      toast(err.error || tr('decksPage.archetypeUpdateError'), 'error')
     }
   }
 
   const deleteDeck = async (id, name) => {
     const ok = await confirm({
-      title: 'Eliminare il mazzo?',
-      message: `"${name}" verrà eliminato definitivamente.`,
-      confirmLabel: 'Elimina',
+      title: tr('decksPage.confirmDeleteTitle'),
+      message: tr('decksPage.confirmDeleteMessage', { name }),
+      confirmLabel: tr('decksPage.confirmDeleteConfirm'),
       danger: true,
     })
     if (!ok) return
     try {
       await api.deleteDeck(id)
       await loadDecks()
-      toast('Mazzo eliminato', 'success')
+      toast(tr('decksPage.deckDeleted'), 'success')
     } catch (err) {
-      toast(err.error || 'Errore nella cancellazione', 'error')
+      toast(err.error || tr('decksPage.deleteError'), 'error')
     }
   }
 
@@ -130,17 +131,17 @@ export default function DecksPage() {
 
   return (
     <div>
-      <div style={{ fontSize: 18, fontWeight: 600, marginBottom: '1.25rem', color: t.text }}>I miei mazzi</div>
+      <div style={{ fontSize: 18, fontWeight: 600, marginBottom: '1.25rem', color: t.text }}>{tr('decksPage.title')}</div>
 
       {/* Form aggiungi */}
       <div style={formCard}>
-        <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12, color: t.text }}>Aggiungi mazzo</div>
+        <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12, color: t.text }}>{tr('decksPage.addDeck')}</div>
         <form onSubmit={submit}>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 10 }}>
-            <input style={inputSt} placeholder="Nome mazzo *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            <input style={inputSt} placeholder={tr('decksPage.deckNamePlaceholder')} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             <CommanderInput
               style={inputSt}
-              placeholder="Commander (opzionale)"
+              placeholder={tr('decksPage.commanderOptionalPlaceholder')}
               value={form.commander}
               onChange={(name) => setForm(f => ({ ...f, commander: name }))}
               onBlur={handleCommanderBlur}
@@ -148,7 +149,7 @@ export default function DecksPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 13, color: t.textSub }}>
-              Colori:{detectingColors && <span style={{ marginLeft: 6, fontSize: 11, color: t.primary }}>rilevamento...</span>}
+              {tr('decksPage.colorsLabel')}{detectingColors && <span style={{ marginLeft: 6, fontSize: 11, color: t.primary }}>{tr('decksPage.detecting')}</span>}
             </span>
             {['W', 'U', 'B', 'R', 'G'].map(c => (
               <button key={c} type="button" onClick={() => toggleColor(c)} style={{
@@ -158,16 +159,16 @@ export default function DecksPage() {
                 outline: form.colors.includes(c) ? `2px solid ${t.primaryBorder}` : 'none'
               }}>{c}</button>
             ))}
-            <span style={{ fontSize: 13, color: t.textSub, marginLeft: 8 }}>Livello:</span>
+            <span style={{ fontSize: 13, color: t.textSub, marginLeft: 8 }}>{tr('decksPage.levelLabel')}</span>
             <select
               style={{ ...inputSt, width: 'auto', padding: '6px 10px' }}
               value={form.bracket}
               onChange={e => setForm(f => ({ ...f, bracket: e.target.value }))}
             >
               <option value="">—</option>
-              {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {BRACKETS[b].label}</option>)}
+              {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {bracketLabel(b, tr)}</option>)}
             </select>
-            <span style={{ fontSize: 13, color: t.textSub }}>Archetipo:</span>
+            <span style={{ fontSize: 13, color: t.textSub }}>{tr('decksPage.archetypeLabel')}</span>
             <select
               style={{ ...inputSt, width: 'auto', padding: '6px 10px' }}
               value={form.archetype}
@@ -178,14 +179,14 @@ export default function DecksPage() {
             </select>
           </div>
           {formError && <div style={{ color: t.danger, fontSize: 13, marginBottom: 8 }}>{formError}</div>}
-          <button type="submit" style={btnPrimary} disabled={saving}>{saving ? 'Salvataggio...' : '+ Aggiungi mazzo'}</button>
+          <button type="submit" style={btnPrimary} disabled={saving}>{saving ? tr('decksPage.saving') : tr('decksPage.addSubmit')}</button>
         </form>
       </div>
 
       {loading && <SkeletonList rows={3} />}
       {error   && <div style={{ color: t.danger, fontSize: 14 }}>{error}</div>}
       {!loading && decks.length === 0 && (
-        <EmptyState icon="🎴" title="Nessun mazzo" message="Aggiungi il tuo primo mazzo dal modulo qui sopra: bastano nome e commander." />
+        <EmptyState icon="🎴" title={tr('decksPage.emptyTitle')} message={tr('decksPage.emptyMessage')} />
       )}
 
       {decks.map(deck => (
@@ -193,7 +194,7 @@ export default function DecksPage() {
           {deck.commander ? (
             <div
               onClick={() => navigate(`/mazzo/${deck.id}`)}
-              title="Apri il profilo del mazzo"
+              title={tr('decksPage.openDeckProfile')}
               style={{ position: 'relative', height: 96, background: '#1a1640', overflow: 'hidden', cursor: 'pointer' }}
             >
               <img
@@ -212,17 +213,17 @@ export default function DecksPage() {
                     {deck.archetype && <ArchetypeBadge archetype={deck.archetype} />}
                     {deck.bracket && <BracketBadge bracket={deck.bracket} />}
                   </div>
-                  {deck.colors && <div style={{ display: 'flex', gap: 3 }}>{deck.colors.split('').map(c => <ColorPip key={c} c={c} />)}</div>}
+                  {deck.colors && <div style={{ display: 'flex', gap: 3 }}>{deck.colors.split('').map(c => <ColorPip key={c} c={c} tr={tr} />)}</div>}
                 </div>
               </div>
             </div>
           ) : (
             <div style={{ padding: '12px 14px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div onClick={() => navigate(`/mazzo/${deck.id}`)} title="Apri il profilo del mazzo" style={{ fontWeight: 600, fontSize: 15, color: t.text, cursor: 'pointer' }}>{deck.name}</div>
+              <div onClick={() => navigate(`/mazzo/${deck.id}`)} title={tr('decksPage.openDeckProfile')} style={{ fontWeight: 600, fontSize: 15, color: t.text, cursor: 'pointer' }}>{deck.name}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 {deck.archetype && <ArchetypeBadge archetype={deck.archetype} />}
                 {deck.bracket && <BracketBadge bracket={deck.bracket} />}
-                {deck.colors && <div style={{ display: 'flex', gap: 3 }}>{deck.colors.split('').map(c => <ColorPip key={c} c={c} />)}</div>}
+                {deck.colors && <div style={{ display: 'flex', gap: 3 }}>{deck.colors.split('').map(c => <ColorPip key={c} c={c} tr={tr} />)}</div>}
               </div>
             </div>
           )}
@@ -231,20 +232,20 @@ export default function DecksPage() {
             <select
               value={deck.archetype || ''}
               onChange={e => updateArchetype(deck.id, e.target.value)}
-              title="Archetipo"
+              title={tr('decksPage.archetypeLabel')}
               style={{ padding: '5px 8px', borderRadius: 8, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 12, cursor: 'pointer', outline: 'none', flex: 1, minWidth: 0 }}
             >
-              <option value="">— archetipo</option>
+              <option value="">{tr('decksPage.archetypePlaceholder')}</option>
               {ARCHETYPE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
             <select
               value={deck.bracket || ''}
               onChange={e => updateBracket(deck.id, e.target.value)}
-              title="Livello"
+              title={tr('decksPage.levelLabel')}
               style={{ padding: '5px 8px', borderRadius: 8, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 12, cursor: 'pointer', outline: 'none' }}
             >
-              <option value="">— livello</option>
-              {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {BRACKETS[b].label}</option>)}
+              <option value="">{tr('decksPage.levelPlaceholder')}</option>
+              {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {bracketLabel(b, tr)}</option>)}
             </select>
             <DeckListPanel
               decklist={deck.decklist}
@@ -258,10 +259,10 @@ export default function DecksPage() {
                   colors: newColors || undefined,
                 })
                 await loadDecks()
-                toast('Mazzo aggiornato', 'success')
+                toast(tr('decksPage.deckUpdated'), 'success')
               }}
             />
-            <button style={btnDanger} onClick={() => deleteDeck(deck.id, deck.name)}>Elimina</button>
+            <button style={btnDanger} onClick={() => deleteDeck(deck.id, deck.name)}>{tr('decksPage.delete')}</button>
           </div>
         </div>
       ))}
