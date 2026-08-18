@@ -871,6 +871,9 @@
     "recentActivity": "Recent activity",
     "emptyFeed": "No activity yet. Log your first game!"
   },
+  "docsPages": {
+    "guideTitle": "User Guide"
+  },
   "errors": {
     "USERNAME_REQUIRED": "Username required",
     "USERNAME_INVALID": "Invalid username: 3-24 characters, letters, numbers, dot, dash and underscore only",
