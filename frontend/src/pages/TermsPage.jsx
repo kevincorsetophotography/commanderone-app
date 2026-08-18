@@ -1,14 +1,16 @@
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
 import MarkdownDoc from '../components/MarkdownDoc'
-import rawMd from '../../../GUIDA_UTENTE.md?raw'
+import rawMd from '../../../TERMINI_SERVIZIO.md?raw'
 
-export default function GuidaPage() {
+// Pagina pubblica (raggiungibile anche senza login, vedi App.jsx) — stesso
+// motivo della Privacy Policy: deve essere visibile prima della registrazione.
+export default function TermsPage() {
   const navigate = useNavigate()
   const { t } = useTheme()
 
   return (
-    <div>
+    <div style={{ maxWidth: 720, margin: '0 auto', padding: '1.5rem 1rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button
           onClick={() => navigate(-1)}
@@ -16,7 +18,7 @@ export default function GuidaPage() {
         >
           ← Indietro
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: t.text, margin: 0 }}>Guida Utente</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: t.text, margin: 0 }}>Termini di Servizio</h1>
       </div>
 
       <MarkdownDoc content={rawMd} />

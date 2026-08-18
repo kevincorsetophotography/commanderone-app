@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 import GroupJoinCreateForm from '../components/GroupJoinCreateForm'
@@ -42,6 +43,8 @@ export default function OnboardingPage() {
 
         <div style={{ marginTop: 22, fontSize: 10, color: t.textMuted, textAlign: 'center', lineHeight: 1.5, maxWidth: 320 }}>
           CommanderOne è Fan Content non ufficiale, permesso dalla Fan Content Policy di Wizards of the Coast. Non approvato/sostenuto da Wizards.
+          <br />
+          <Link to="/privacy" style={{ color: t.textMuted }}>Privacy Policy</Link> · <Link to="/termini" style={{ color: t.textMuted }}>Termini di Servizio</Link>
         </div>
       </div>
     </div>
