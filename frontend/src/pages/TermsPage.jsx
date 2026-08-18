@@ -1,13 +1,18 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useTheme } from '../hooks/useTheme'
 import MarkdownDoc from '../components/MarkdownDoc'
-import rawMd from '../../../TERMINI_SERVIZIO.md?raw'
+import rawMdIt from '../../../TERMINI_SERVIZIO.md?raw'
+import rawMdEn from '../../../TERMINI_SERVIZIO.en.md?raw'
 
 // Pagina pubblica (raggiungibile anche senza login, vedi App.jsx) — stesso
 // motivo della Privacy Policy: deve essere visibile prima della registrazione.
+// Stesso pattern di selezione file .md per lingua di PrivacyPage/GuidaPage.
 export default function TermsPage() {
   const navigate = useNavigate()
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const rawMd = i18n.language === 'en' ? rawMdEn : rawMdIt
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '1.5rem 1rem' }}>
@@ -16,9 +21,9 @@ export default function TermsPage() {
           onClick={() => navigate(-1)}
           style={{ padding: '6px 14px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.bgMuted, color: t.textSub, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
         >
-          ← Indietro
+          {tr('common.back')}
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: t.text, margin: 0 }}>Termini di Servizio</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: t.text, margin: 0 }}>{tr('auth.register.termsLink')}</h1>
       </div>
 
       <MarkdownDoc content={rawMd} />

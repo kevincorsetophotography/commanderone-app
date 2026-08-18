@@ -871,6 +871,9 @@
     "recentActivity": "Attività recente",
     "emptyFeed": "Ancora nessuna attività. Registra la prima partita!"
   },
+  "docsPages": {
+    "guideTitle": "Guida Utente"
+  },
   "errors": {
     "USERNAME_REQUIRED": "Username richiesto",
     "USERNAME_INVALID": "Username non valido: 3-24 caratteri, solo lettere, numeri, punto, trattino e underscore",
