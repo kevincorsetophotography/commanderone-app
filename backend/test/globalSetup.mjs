@@ -39,6 +39,10 @@ export async function setup() {
   process.env.DATABASE_URL = DATABASE_URL;
   process.env.JWT_SECRET = 'test-jwt-secret-at-least-32-characters-long-ok';
   process.env.FRONTEND_URL = 'http://localhost:5173';
+  // Letto da app.js/routes/judge.js per disattivare i rate limiter: in una
+  // suite di integrazione tutte le richieste arrivano dalla stessa "IP" via
+  // supertest, e superano facilmente i limiti pensati per un utente reale.
+  process.env.NODE_ENV = 'test';
 
   execSync('npx prisma db push --skip-generate --accept-data-loss', {
     stdio: 'inherit',

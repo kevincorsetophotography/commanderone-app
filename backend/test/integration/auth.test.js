@@ -4,7 +4,7 @@ import { request, app, unique, registerUser, PASSWORD } from '../helpers.js';
 describe('POST /api/auth/register', () => {
   it('crea un account e ritorna un token utilizzabile', async () => {
     const username = unique('reg');
-    const res = await request(app).post('/api/auth/register').send({ username, password: PASSWORD });
+    const res = await request(app).post('/api/auth/register').send({ username, email: `${username}@example.test`, password: PASSWORD });
     expect(res.status).toBe(200);
     expect(res.body.token).toBeTruthy();
     expect(res.body.user.username).toBe(username);
@@ -12,7 +12,7 @@ describe('POST /api/auth/register', () => {
 
   it('rifiuta uno username già in uso', async () => {
     const { username } = await registerUser('dup');
-    const res = await request(app).post('/api/auth/register').send({ username, password: PASSWORD });
+    const res = await request(app).post('/api/auth/register').send({ username, email: unique('dup') + '@example.test', password: PASSWORD });
     expect(res.status).toBe(409);
   });
 

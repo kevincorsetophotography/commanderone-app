@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 const { validateUsername, validateEmail, validatePassword, normalizeEmail } = require('../lib/validators');
 const { TYPES, issueToken, consumeToken } = require('../lib/authTokens');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../lib/mailer');
+const { deleteAccount } = require('../lib/accountDeletion');
 
 const VERIFY_TTL = 24 * 60 * 60 * 1000; // 24h
 const RESET_TTL = 60 * 60 * 1000;       // 1h
@@ -195,6 +196,32 @@ router.patch('/profile', auth, async (req, res) => {
   } catch (e) {
     console.error('update profile error', e);
     res.status(500).json({ error: 'Errore aggiornamento profilo' });
+  }
+});
+
+// DELETE /api/auth/account — cancellazione self-service (GDPR "diritto
+// all'oblio"). Richiede la password per conferma: un JWT rubato/copiato non
+// deve bastare da solo a cancellare l'account. Vedi lib/accountDeletion.js
+// per cosa viene davvero cancellato e cosa riassegnato a un utente "fantasma"
+// per non rompere lo storico partite condiviso con altri giocatori.
+router.delete('/account', auth, async (req, res) => {
+  const { password } = req.body;
+  if (typeof password !== 'string' || !password) {
+    return res.status(400).json({ error: 'Password richiesta per confermare' });
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return res.status(401).json({ error: 'Password errata' });
+  }
+
+  try {
+    const result = await deleteAccount(prisma, req.user.id);
+    if (result.error) return res.status(409).json({ error: result.error });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('delete account error', error);
+    res.status(500).json({ error: 'Errore durante la cancellazione dell\'account' });
   }
 });
 

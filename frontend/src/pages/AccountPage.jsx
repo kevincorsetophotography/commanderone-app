@@ -18,6 +18,11 @@ export default function AccountPage() {
 
   const [resendState, setResendState] = useState('') // '' | sending | sent | error
 
+  const [showDelete, setShowDelete] = useState(false)
+  const [deletePw, setDeletePw] = useState('')
+  const [deleteError, setDeleteError] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
   useEffect(() => {
     api.me().then(setMe).catch(() => {})
   }, [])
@@ -58,6 +63,19 @@ export default function AccountPage() {
       setResendState('sent')
     } catch {
       setResendState('error')
+    }
+  }
+
+  const deleteAccount = async (e) => {
+    e.preventDefault()
+    setDeleteError('')
+    setDeleteLoading(true)
+    try {
+      await api.deleteAccount(deletePw)
+      logout()
+    } catch (err) {
+      setDeleteError(err.error || 'Errore di connessione')
+      setDeleteLoading(false)
     }
   }
 
@@ -127,6 +145,48 @@ export default function AccountPage() {
         }}>
           Esci dall'account
         </button>
+      </div>
+
+      <div style={{ ...card, border: `1px solid ${t.dangerBorder || t.danger}` }}>
+        <div style={{ ...label, color: t.danger }}>Zona pericolosa</div>
+        {!showDelete ? (
+          <>
+            <div style={{ fontSize: 13, color: t.textSub, marginBottom: 12, lineHeight: 1.5 }}>
+              Cancella definitivamente il tuo account e i tuoi dati personali. Le partite già giocate
+              con altri restano nello storico del gruppo, ma non più a tuo nome.
+            </div>
+            <button onClick={() => setShowDelete(true)} style={{
+              padding: '10px 18px', borderRadius: 11, border: `1px solid ${t.dangerBorder || t.danger}`,
+              background: 'transparent', color: t.danger, fontSize: 14, fontWeight: 700, cursor: 'pointer',
+            }}>
+              Elimina il mio account
+            </button>
+          </>
+        ) : (
+          <form onSubmit={deleteAccount}>
+            <div style={{ fontSize: 13, color: t.danger, marginBottom: 12, lineHeight: 1.5, fontWeight: 600 }}>
+              Questa azione non si può annullare. Username ed email tornano liberi; mazzi e partecipazioni
+              a partite già giocate restano visibili al gruppo, ma anonimizzati.
+            </div>
+            <input type="password" placeholder="Conferma con la tua password" value={deletePw}
+              onChange={e => setDeletePw(e.target.value)} required autoComplete="current-password" style={inputStyle} />
+            {deleteError && <div style={{ color: t.danger, fontSize: 13, marginBottom: 10 }}>{deleteError}</div>}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="submit" disabled={deleteLoading} style={{
+                padding: '10px 18px', background: t.danger, color: '#fff', border: 'none',
+                borderRadius: 11, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: deleteLoading ? 0.7 : 1,
+              }}>
+                {deleteLoading ? '...' : 'Elimina definitivamente'}
+              </button>
+              <button type="button" onClick={() => { setShowDelete(false); setDeletePw(''); setDeleteError('') }} style={{
+                padding: '10px 18px', borderRadius: 11, border: `1px solid ${t.border}`,
+                background: 'transparent', color: t.textSub, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              }}>
+                Annulla
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   )

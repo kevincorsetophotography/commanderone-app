@@ -41,6 +41,13 @@ app.set('trust proxy', 1);
 // HTTP security headers (X-Content-Type-Options, X-Frame-Options, HSTS, etc.)
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
+// Nei test di integrazione (test/globalSetup.mjs imposta NODE_ENV=test) tutte
+// le richieste arrivano dalla stessa "IP" via supertest: una singola suite fa
+// facilmente più chiamate /api/auth di quante un utente reale ne farebbe in
+// 15 minuti, quindi i limiter andrebbero in 429 e farebbero fallire i test
+// per un motivo che non c'entra nulla con quello che stanno verificando.
+const skipInTest = () => process.env.NODE_ENV === 'test';
+
 // Anti brute-force su login/registrazione
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -48,6 +55,7 @@ const authLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: 'Troppi tentativi, riprova tra qualche minuto.' },
+  skip: skipInTest,
 });
 
 // Limite stretto sugli endpoint che inviano email (anti-abuso del provider)
@@ -57,6 +65,7 @@ const emailLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: 'Troppe richieste email, riprova tra un\'ora.' },
+  skip: skipInTest,
 });
 
 // Limite generale sulle API autenticate (anti-scraping, anti-flood)
@@ -65,6 +74,7 @@ const apiLimiter = rateLimit({
   limit: 300,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  skip: skipInTest,
   message: { error: 'Troppo traffico, rallenta un po\'.' },
 });
 

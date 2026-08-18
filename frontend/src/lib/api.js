@@ -57,6 +57,7 @@ export const api = {
   forgotPassword:     (email) => req('POST', '/auth/forgot-password', { email }),
   resetPassword:      (token, newPassword) => req('POST', '/auth/reset-password', { token, newPassword }),
   verifyEmail:        (token) => req('POST', '/auth/verify-email', { token }),
+  deleteAccount:      (password) => req('DELETE', '/auth/account', { password }),
   resendVerification: ()     => req('POST', '/auth/resend-verification'),
 
   // gruppi (creazione/adesione, non scoped a un gruppo specifico)

@@ -9,6 +9,7 @@ const judgeLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: 'Troppe domande al judge, riprova tra qualche minuto.' },
+  skip: () => process.env.NODE_ENV === 'test',
 });
 
 // POST /api/groups/:slug/judge — domanda al judge bot
