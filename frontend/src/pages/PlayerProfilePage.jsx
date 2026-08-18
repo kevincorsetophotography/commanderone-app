@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../hooks/useAuth'
@@ -13,13 +14,13 @@ import CommanderInput from '../components/CommanderInput'
 import BracketBadge from '../components/BracketBadge'
 import ArchetypeBadge from '../components/ArchetypeBadge'
 import { getAchievements } from '../lib/achievements'
-import { BRACKETS, BRACKET_OPTIONS } from '../lib/brackets'
+import { BRACKETS, BRACKET_OPTIONS, bracketLabel } from '../lib/brackets'
 import { ARCHETYPE_OPTIONS } from '../lib/archetypes'
 import { fetchCommanderColors, getCardPrintings } from '../lib/scryfall'
 import { seasonOf, computeStandings } from '../lib/seasons'
+import { ordinal } from '../lib/ordinal'
 
-const COLOR_MAP   = { W: '#f5f0e0', U: '#b8d4e8', B: '#c8b8d8', R: '#e8c0b0', G: '#b8d8b8' }
-const COLOR_LABEL = { W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde' }
+const COLOR_MAP = { W: '#f5f0e0', U: '#b8d4e8', B: '#c8b8d8', R: '#e8c0b0', G: '#b8d8b8' }
 
 const artUrl = (name) =>
   `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}&format=image&version=art_crop`
@@ -32,9 +33,9 @@ function WinBar({ pct, t }) {
   )
 }
 
-function ColorPip({ c }) {
+function ColorPip({ c, tr }) {
   return (
-    <span title={COLOR_LABEL[c]} style={{
+    <span title={tr(`colors.${c}`)} style={{
       display: 'inline-block', width: 16, height: 16, borderRadius: '50%',
       background: COLOR_MAP[c] || '#eee', border: '1px solid rgba(0,0,0,0.15)',
       fontSize: 9, lineHeight: '16px', textAlign: 'center', fontWeight: 600, color: '#444',
@@ -47,6 +48,8 @@ export default function PlayerProfilePage() {
   const pid = Number.parseInt(id, 10)
   const navigate = useNavigate()
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const { user, updateUser, logout } = useAuth()
   const isMobile = useIsMobile()
   const { toast, confirm } = useFeedback()
@@ -99,7 +102,7 @@ export default function PlayerProfilePage() {
   useEffect(() => {
     Promise.all([api.getGames(), api.statsDecks(), api.statsPlayers()])
       .then(([g, d, p]) => { setGames(g); setDeckStats(d); setPlayers(p) })
-      .catch(() => setError('Errore nel caricamento del profilo'))
+      .catch(() => setError(tr('playerProfilePage.loadError')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -128,7 +131,7 @@ export default function PlayerProfilePage() {
   const loadMyDecks = async () => {
     setLoadingDecks(true)
     try { setMyFullDecks(await api.getMyDecks()) }
-    catch { toast('Errore nel caricamento mazzi', 'error') }
+    catch { toast(tr('decksPage.loadError'), 'error') }
     finally { setLoadingDecks(false) }
   }
   useEffect(() => { if (isOwnProfile) loadMyDecks() }, [isOwnProfile])
@@ -269,7 +272,7 @@ export default function PlayerProfilePage() {
 
   const submitAddDeck = async (e) => {
     e.preventDefault()
-    if (!deckForm.name.trim()) { setDeckFormError('Il nome è obbligatorio'); return }
+    if (!deckForm.name.trim()) { setDeckFormError(tr('decksPage.nameRequired')); return }
     setAddingDeck(true); setDeckFormError('')
     try {
       await api.createDeck({
@@ -282,25 +285,25 @@ export default function PlayerProfilePage() {
       setDeckForm({ name: '', commander: '', colors: [], bracket: '', archetype: '' })
       setShowAddForm(false)
       await loadMyDecks()
-      toast('Mazzo aggiunto', 'success')
+      toast(tr('decksPage.deckAdded'), 'success')
     } catch (err) {
-      setDeckFormError(err.error || 'Errore nel salvataggio')
+      setDeckFormError(err.error || tr('decksPage.saveError'))
     } finally { setAddingDeck(false) }
   }
 
   const updateDeckBracket = async (id, bracket) => {
-    try { await api.updateDeck(id, { bracket: bracket || null }); await loadMyDecks(); toast('Livello aggiornato', 'success') }
-    catch (err) { toast(err.error || 'Errore aggiornamento', 'error') }
+    try { await api.updateDeck(id, { bracket: bracket || null }); await loadMyDecks(); toast(tr('decksPage.levelUpdated'), 'success') }
+    catch (err) { toast(err.error || tr('playerProfilePage.genericUpdateError'), 'error') }
   }
   const updateDeckArchetype = async (id, archetype) => {
-    try { await api.updateDeck(id, { archetype: archetype || null }); await loadMyDecks(); toast('Archetipo aggiornato', 'success') }
-    catch (err) { toast(err.error || 'Errore aggiornamento', 'error') }
+    try { await api.updateDeck(id, { archetype: archetype || null }); await loadMyDecks(); toast(tr('decksPage.archetypeUpdated'), 'success') }
+    catch (err) { toast(err.error || tr('playerProfilePage.genericUpdateError'), 'error') }
   }
   const deleteDeck = async (id, name) => {
-    const ok = await confirm({ title: 'Eliminare il mazzo?', message: `"${name}" verrà eliminato definitivamente.`, confirmLabel: 'Elimina', danger: true })
+    const ok = await confirm({ title: tr('decksPage.confirmDeleteTitle'), message: tr('decksPage.confirmDeleteMessage', { name }), confirmLabel: tr('common.delete'), danger: true })
     if (!ok) return
-    try { await api.deleteDeck(id); await loadMyDecks(); toast('Mazzo eliminato', 'success') }
-    catch (err) { toast(err.error || 'Errore nella cancellazione', 'error') }
+    try { await api.deleteDeck(id); await loadMyDecks(); toast(tr('decksPage.deckDeleted'), 'success') }
+    catch (err) { toast(err.error || tr('decksPage.deleteError'), 'error') }
   }
 
   // ── Avatar ──
@@ -312,7 +315,7 @@ export default function PlayerProfilePage() {
       const results = await getCardPrintings(name)
       setPrintings(results)
       if (results.length === 1) setSelectedPrintingId(results[0].id)
-    } catch { toast('Errore nel caricamento delle stampe', 'error') }
+    } catch { toast(tr('playerProfilePage.printingsLoadError'), 'error') }
     finally { setLoadingPrintings(false) }
   }
   const openPicker = async () => {
@@ -332,8 +335,8 @@ export default function PlayerProfilePage() {
       setAvatarScryfallId(selectedPrintingId)
       updateUser({ avatarCardName: name, avatarScryfallId: selectedPrintingId })
       setPickerOpen(false)
-      toast('Avatar aggiornato', 'success')
-    } catch { toast("Errore nel salvataggio dell'avatar", 'error') }
+      toast(tr('playerProfilePage.avatarUpdated'), 'success')
+    } catch { toast(tr('playerProfilePage.avatarSaveError'), 'error') }
     finally { setSavingAvatar(false) }
   }
   const removeAvatar = async () => {
@@ -344,8 +347,8 @@ export default function PlayerProfilePage() {
       setAvatarScryfallId(null)
       updateUser({ avatarCardName: null, avatarScryfallId: null })
       setPickerOpen(false)
-      toast('Avatar rimosso', 'success')
-    } catch { toast('Errore nella rimozione', 'error') }
+      toast(tr('playerProfilePage.avatarRemoved'), 'success')
+    } catch { toast(tr('playerProfilePage.avatarRemoveError'), 'error') }
     finally { setSavingAvatar(false) }
   }
 
@@ -367,14 +370,14 @@ export default function PlayerProfilePage() {
 
   const backBtn = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-      <button onClick={() => navigate(-1)} style={btnSecondary}>← Indietro</button>
-      {isOwnProfile && <button onClick={() => navigate('/guida')} style={btnSecondary}>? Guida</button>}
+      <button onClick={() => navigate(-1)} style={btnSecondary}>{tr('common.back')}</button>
+      {isOwnProfile && <button onClick={() => navigate('/guida')} style={btnSecondary}>{tr('playerProfilePage.guideButton')}</button>}
     </div>
   )
 
   if (loading) return (<div>{backBtn}<Skeleton h={140} r={16} style={{ marginBottom: 16 }} /><SkeletonList rows={4} /></div>)
-  if (error)   return (<div>{backBtn}<EmptyState icon="⚠️" title="Errore" message={error} /></div>)
-  if (!profile.player) return (<div>{backBtn}<EmptyState icon="🔍" title="Giocatore non trovato" message="Questo profilo non esiste o non ha ancora dati." /></div>)
+  if (error)   return (<div>{backBtn}<EmptyState icon="⚠️" title={tr('gruppoPage.errorTitle')} message={error} /></div>)
+  if (!profile.player) return (<div>{backBtn}<EmptyState icon="🔍" title={tr('playerProfilePage.playerNotFoundTitle')} message={tr('playerProfilePage.playerNotFoundMessage')} /></div>)
 
   const { player, myGames, wins, total, winRate, streak, nemesis, favDeck, myDecks, trend, avgPlacement, firstOuts, placed, achievements, kills, deaths, archNemesis, favoritePrey, hasKillData } = profile
 
@@ -405,7 +408,7 @@ export default function PlayerProfilePage() {
     const hidden = a.secret && !a.unlocked
     const gold   = a.secret && a.unlocked
     return (
-      <span key={a.id} title={hidden ? 'Achievement segreto' : a.title} style={{
+      <span key={a.id} title={hidden ? tr('playerProfilePage.secretAchievement') : a.title} style={{
         width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
         background: a.unlocked ? (gold ? GOLD + '22' : t.primaryBg) : t.bgMuted,
@@ -420,7 +423,7 @@ export default function PlayerProfilePage() {
     const hidden = a.secret && !a.unlocked
     const gold   = a.secret && a.unlocked
     return (
-      <div key={a.id} title={hidden ? 'Achievement segreto' : a.desc} style={{
+      <div key={a.id} title={hidden ? tr('playerProfilePage.secretAchievement') : a.desc} style={{
         display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10,
         background: a.unlocked ? (gold ? GOLD + '1f' : t.primaryBg) : t.bgMuted,
         border: `1px solid ${a.unlocked ? (gold ? GOLD + '88' : t.primaryBorder) : (a.secret ? GOLD + '40' : t.border)}`,
@@ -431,9 +434,9 @@ export default function PlayerProfilePage() {
         <span style={{ fontSize: 22, filter: a.unlocked ? 'none' : 'grayscale(1)' }}>{hidden ? '🔒' : a.icon}</span>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 12.5, fontWeight: 700, color: a.unlocked ? (gold ? GOLD : t.text) : t.textSub }}>
-            {hidden ? '???' : a.title}{gold && ' ✨'}
+            {hidden ? tr('playerProfilePage.hiddenTitle') : a.title}{gold && ' ✨'}
           </div>
-          <div style={{ fontSize: 10.5, color: t.textMuted, lineHeight: 1.25 }}>{hidden ? 'Achievement segreto' : a.desc}</div>
+          <div style={{ fontSize: 10.5, color: t.textMuted, lineHeight: 1.25 }}>{hidden ? tr('playerProfilePage.secretAchievement') : a.desc}</div>
         </div>
       </div>
     )
@@ -484,7 +487,7 @@ export default function PlayerProfilePage() {
             {isOwnProfile && (
               <button
                 onClick={openPicker}
-                title="Cambia avatar"
+                title={tr('playerProfilePage.changeAvatarTitle')}
                 style={{
                   position: 'absolute', bottom: -1, right: -1,
                   width: 26, height: 26, borderRadius: '50%',
@@ -504,11 +507,11 @@ export default function PlayerProfilePage() {
               {player.username}
             </div>
             <div style={{ fontSize: 13, color: hasArt ? 'rgba(255,255,255,0.65)' : t.textSub }}>
-              {total} partite giocate
+              {tr('playerProfilePage.totalGamesPlayed', { count: total })}
             </div>
             {streak >= 2 && (
               <div style={{ fontSize: 12, fontWeight: 700, color: hasArt ? '#FFD580' : t.primary, marginTop: 2 }}>
-                🔥 Streak attiva: {streak} vittorie di fila
+                {tr('playerProfilePage.activeStreak', { count: streak })}
               </div>
             )}
           </div>
@@ -524,30 +527,30 @@ export default function PlayerProfilePage() {
       {seasonData && (
         <div style={{ ...card, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 10, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700 }}>Stagione corrente</div>
+            <div style={{ fontSize: 10, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700 }}>{tr('gruppoPage.currentSeason')}</div>
             <div style={{ fontSize: 13, color: t.text, marginTop: 2, fontWeight: 500 }}>
-              {seasonData.label} · Rank #{seasonData.rank} · {seasonData.points} punti
+              {tr('playerProfilePage.seasonRankLine', { label: seasonData.label, rank: seasonData.rank, points: seasonData.points })}
             </div>
           </div>
           {seasonData.qualified
-            ? <span style={{ fontSize: 11, fontWeight: 700, color: t.win, background: t.winBg, padding: '3px 10px', borderRadius: 20, flexShrink: 0 }}>qualificato ✓</span>
-            : <span style={{ fontSize: 11, color: t.textMuted, flexShrink: 0 }}>non qualificato</span>
+            ? <span style={{ fontSize: 11, fontWeight: 700, color: t.win, background: t.winBg, padding: '3px 10px', borderRadius: 20, flexShrink: 0 }}>{tr('playerProfilePage.qualifiedBadge')}</span>
+            : <span style={{ fontSize: 11, color: t.textMuted, flexShrink: 0 }}>{tr('playerProfilePage.notQualifiedText')}</span>
           }
           <button
             onClick={() => navigate('/gruppo?tab=stagione')}
             style={{ padding: '5px 12px', borderRadius: 8, border: `1px solid ${t.border}`, background: t.bgMuted, color: t.textSub, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-          >Classifica →</button>
+          >{tr('playerProfilePage.standingsLink')}</button>
         </div>
       )}
 
       {/* ── ACHIEVEMENT ── */}
       <div id="achievements" style={{ ...card, cursor: achOpen ? 'default' : 'pointer', scrollMarginTop: 70 }} onClick={() => { if (!achOpen) setAchOpen(true) }}>
         <div onClick={(e) => { e.stopPropagation(); setAchOpen(o => !o) }} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Achievement</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>{tr('playerProfilePage.achievementsTitle')}</span>
           <span style={{ fontWeight: 500, color: t.textMuted, fontSize: 13 }}>· {unlockedCount}/{achievements.length}</span>
-          {secretTotal > 0 && <span style={{ fontWeight: 600, color: GOLD, fontSize: 12 }}>✨ {secretDone}/{secretTotal} segreti</span>}
+          {secretTotal > 0 && <span style={{ fontWeight: 600, color: GOLD, fontSize: 12 }}>{tr('playerProfilePage.secretsCount', { done: secretDone, total: secretTotal })}</span>}
           <span style={{ marginLeft: 'auto', fontSize: 12, color: t.textSub, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            {achOpen ? 'nascondi' : 'mostra'}
+            {achOpen ? tr('playerProfilePage.hide') : tr('playerProfilePage.show')}
             <span style={{ display: 'inline-block', transition: 'transform 0.15s', transform: achOpen ? 'rotate(90deg)' : 'none' }}>▸</span>
           </span>
         </div>
@@ -559,7 +562,7 @@ export default function PlayerProfilePage() {
             {nextAch && (
               <div style={{ marginTop: 10, fontSize: 12, color: t.textSub, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ opacity: 0.5 }}>{nextAch.icon}</span>
-                <span>Prossimo: <strong style={{ color: t.text }}>{nextAch.title}</strong> — {nextAch.desc}</span>
+                <span><Trans i18nKey="playerProfilePage.nextAchievement" values={{ title: nextAch.title, desc: nextAch.desc }} components={{ strong: <strong style={{ color: t.text }} /> }} /></span>
               </div>
             )}
           </>
@@ -576,7 +579,7 @@ export default function PlayerProfilePage() {
         /* Profilo proprio: gestione completa */
         <div style={{ ...card }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: (showAddForm || myFullDecks.length > 0) ? 14 : 0 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>I miei mazzi</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>{tr('decksPage.title')}</span>
             {myFullDecks.length > 0 && (
               <span style={{ fontSize: 12, color: t.textMuted, fontWeight: 500 }}>{myFullDecks.length}</span>
             )}
@@ -588,18 +591,18 @@ export default function PlayerProfilePage() {
                 background: showAddForm ? t.dangerBg : t.primaryBg,
                 color: showAddForm ? t.danger : t.primary,
               }}
-            >{showAddForm ? '✕ Annulla' : '+ Aggiungi'}</button>
+            >{showAddForm ? tr('playerProfilePage.cancelDeckForm') : tr('playerProfilePage.addDeckButton')}</button>
           </div>
 
           {/* Form aggiungi mazzo */}
           {showAddForm && (
             <form onSubmit={submitAddDeck} style={{ background: t.bgMuted, borderRadius: 12, padding: '14px 16px', marginBottom: 14, border: `1px solid ${t.border}` }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 10 }}>Nuovo mazzo</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 10 }}>{tr('playerProfilePage.newDeckFormTitle')}</div>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 10 }}>
-                <input style={inputSt} placeholder="Nome mazzo *" value={deckForm.name} onChange={e => setDeckForm(f => ({ ...f, name: e.target.value }))} />
+                <input style={inputSt} placeholder={tr('decksPage.deckNamePlaceholder')} value={deckForm.name} onChange={e => setDeckForm(f => ({ ...f, name: e.target.value }))} />
                 <CommanderInput
                   style={inputSt}
-                  placeholder="Commander (opzionale)"
+                  placeholder={tr('decksPage.commanderOptionalPlaceholder')}
                   value={deckForm.commander}
                   onChange={(name) => setDeckForm(f => ({ ...f, commander: name }))}
                   onBlur={handleDeckCommanderBlur}
@@ -607,7 +610,7 @@ export default function PlayerProfilePage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 12, color: t.textSub }}>
-                  Colori:{detectingDeckColors && <span style={{ marginLeft: 5, fontSize: 11, color: t.primary }}>rilevamento...</span>}
+                  {tr('decksPage.colorsLabel')}{detectingDeckColors && <span style={{ marginLeft: 5, fontSize: 11, color: t.primary }}>{tr('decksPage.detecting')}</span>}
                 </span>
                 {['W', 'U', 'B', 'R', 'G'].map(c => (
                   <button key={c} type="button" onClick={() => toggleDeckColor(c)} style={{
@@ -618,24 +621,24 @@ export default function PlayerProfilePage() {
                   }}>{c}</button>
                 ))}
                 <select style={{ ...inputSt, width: 'auto', padding: '5px 8px', fontSize: 12 }} value={deckForm.bracket} onChange={e => setDeckForm(f => ({ ...f, bracket: e.target.value }))}>
-                  <option value="">— livello</option>
-                  {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {BRACKETS[b].label}</option>)}
+                  <option value="">{tr('decksPage.levelPlaceholder')}</option>
+                  {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {bracketLabel(b, tr)}</option>)}
                 </select>
                 <select style={{ ...inputSt, width: 'auto', padding: '5px 8px', fontSize: 12 }} value={deckForm.archetype} onChange={e => setDeckForm(f => ({ ...f, archetype: e.target.value }))}>
-                  <option value="">— archetipo</option>
+                  <option value="">{tr('decksPage.archetypePlaceholder')}</option>
                   {ARCHETYPE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
               </div>
               {deckFormError && <div style={{ color: t.danger, fontSize: 12, marginBottom: 8 }}>{deckFormError}</div>}
               <button type="submit" style={{ ...btnPrimary, fontSize: 13, padding: '8px 18px' }} disabled={addingDeck}>
-                {addingDeck ? 'Salvataggio...' : '+ Crea mazzo'}
+                {addingDeck ? tr('decksPage.saving') : tr('playerProfilePage.createDeckButton')}
               </button>
             </form>
           )}
 
           {loadingDecks && <SkeletonList rows={2} />}
           {!loadingDecks && myFullDecks.length === 0 && (
-            <EmptyState icon="🎴" title="Nessun mazzo" message="Aggiungi il tuo primo mazzo con il pulsante +." />
+            <EmptyState icon="🎴" title={tr('playerProfilePage.emptyDecksTitle')} message={tr('playerProfilePage.emptyDecksMessage')} />
           )}
           {!loadingDecks && myFullDecks.map(deck => {
             const ds = getDeckStat(deck.id)
@@ -644,7 +647,7 @@ export default function PlayerProfilePage() {
                 {deck.commander ? (
                   <div
                     onClick={() => navigate(`/mazzo/${deck.id}`)}
-                    title="Apri profilo mazzo"
+                    title={tr('playerProfilePage.openDeckProfileShort')}
                     style={{ position: 'relative', height: 80, background: '#1a1640', overflow: 'hidden', cursor: 'pointer' }}
                   >
                     <img
@@ -664,7 +667,7 @@ export default function PlayerProfilePage() {
                           {deck.archetype && <ArchetypeBadge archetype={deck.archetype} />}
                           {deck.bracket && <BracketBadge bracket={deck.bracket} />}
                         </div>
-                        {deck.colors && <div style={{ display: 'flex', gap: 2 }}>{deck.colors.split('').map(c => <ColorPip key={c} c={c} />)}</div>}
+                        {deck.colors && <div style={{ display: 'flex', gap: 2 }}>{deck.colors.split('').map(c => <ColorPip key={c} c={c} tr={tr} />)}</div>}
                       </div>
                     </div>
                   </div>
@@ -681,7 +684,7 @@ export default function PlayerProfilePage() {
                 <div style={{ padding: '8px 10px', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', background: t.bgSurface, borderTop: deck.commander ? 'none' : `1px solid ${t.border}` }}>
                   {ds.games > 0 && (
                     <span style={{ fontSize: 12, fontWeight: 700, color: ds.winRate >= 50 ? t.win : t.textSub, marginRight: 2, flexShrink: 0 }}>
-                      {ds.winRate}% WR
+                      {tr('playerProfilePage.winRateAbbrev', { value: ds.winRate })}
                     </span>
                   )}
                   <select
@@ -689,7 +692,7 @@ export default function PlayerProfilePage() {
                     onChange={e => updateDeckArchetype(deck.id, e.target.value)}
                     style={{ padding: '4px 6px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 11, cursor: 'pointer', outline: 'none', flex: 1, minWidth: 0 }}
                   >
-                    <option value="">— archetipo</option>
+                    <option value="">{tr('decksPage.archetypePlaceholder')}</option>
                     {ARCHETYPE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
                   </select>
                   <select
@@ -697,8 +700,8 @@ export default function PlayerProfilePage() {
                     onChange={e => updateDeckBracket(deck.id, e.target.value)}
                     style={{ padding: '4px 6px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 11, cursor: 'pointer', outline: 'none' }}
                   >
-                    <option value="">— livello</option>
-                    {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {BRACKETS[b].label}</option>)}
+                    <option value="">{tr('decksPage.levelPlaceholder')}</option>
+                    {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {bracketLabel(b, tr)}</option>)}
                   </select>
                   <DeckListPanel
                     decklist={deck.decklist}
@@ -707,10 +710,10 @@ export default function PlayerProfilePage() {
                     onSave={async (newList, newCommander, newColors, newName) => {
                       await api.updateDeck(deck.id, { name: newName, decklist: newList, commander: newCommander, colors: newColors || undefined })
                       await loadMyDecks()
-                      toast('Mazzo aggiornato', 'success')
+                      toast(tr('decksPage.deckUpdated'), 'success')
                     }}
                   />
-                  <button style={btnDanger} onClick={() => deleteDeck(deck.id, deck.name)}>Elimina</button>
+                  <button style={btnDanger} onClick={() => deleteDeck(deck.id, deck.name)}>{tr('common.delete')}</button>
                 </div>
               </div>
             )
@@ -724,7 +727,7 @@ export default function PlayerProfilePage() {
             if (!best) return null
             return (
               <>
-                <div style={{ fontSize: 15, fontWeight: 700, color: t.text, margin: '20px 0 10px' }}>Miglior Mazzo</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: t.text, margin: '20px 0 10px' }}>{tr('playerProfilePage.bestDeckTitle')}</div>
                 <div className="ct-lift" style={{ ...card, marginBottom: 10, display: 'flex', gap: 12, alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate(`/mazzo/${best.id}`)}>
                   <DeckThumb commander={best.commander} w={64} preview={false} />
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -736,7 +739,7 @@ export default function PlayerProfilePage() {
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: 12, color: t.textSub }}>{best.commander || 'Nessun commander'} · {best.wins}V / {best.games - best.wins}P su {best.games} partite</div>
+                    <div style={{ fontSize: 12, color: t.textSub }}>{best.commander || tr('deckProfilePage.noCommander')} · {tr('playerProfilePage.deckRecordFull', { wins: best.wins, losses: best.games - best.wins, games: best.games })}</div>
                     <WinBar pct={best.winRate} t={t} />
                   </div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: best.winRate >= 50 ? t.win : t.primary, flexShrink: 0 }}>{best.winRate}%</div>
@@ -747,7 +750,7 @@ export default function PlayerProfilePage() {
           {myDecks.length > 1 && (
             <div style={card}>
               <div style={{ fontSize: 14, fontWeight: 700, color: t.text, marginBottom: 10 }}>
-                Tutti i mazzi
+                {tr('playerProfilePage.allDecksTitle')}
                 <span style={{ fontSize: 12, color: t.textMuted, fontWeight: 500, marginLeft: 6 }}>{myDecks.length}</span>
               </div>
               {myDecks.map(d => (
@@ -758,7 +761,7 @@ export default function PlayerProfilePage() {
                     <div style={{ fontSize: 11, color: t.textMuted }}>{d.commander || '—'}</div>
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: d.games === 0 ? t.textMuted : d.winRate >= 50 ? t.win : t.primary, flexShrink: 0 }}>
-                    {d.games === 0 ? 'n/a' : `${d.winRate}%`}
+                    {d.games === 0 ? tr('deckProfilePage.notApplicable') : `${d.winRate}%`}
                   </div>
                 </div>
               ))}
@@ -771,9 +774,9 @@ export default function PlayerProfilePage() {
       {opponents.length > 0 && (
         <div style={card}>
           <div onClick={() => setShowRivalita(v => !v)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Scontri diretti ⚔️</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>{tr('playerProfilePage.headToHeadTitle')}</span>
             <span style={{ fontSize: 12, color: t.textMuted, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              {showRivalita ? 'nascondi' : `${opponents.length} avversari`}
+              {showRivalita ? tr('playerProfilePage.hide') : tr('playerProfilePage.opponentsCountLabel', { count: opponents.length })}
               <span style={{ display: 'inline-block', transition: 'transform 0.15s', transform: showRivalita ? 'rotate(90deg)' : 'none' }}>▸</span>
             </span>
           </div>
@@ -788,7 +791,7 @@ export default function PlayerProfilePage() {
                 >
                   {opponents.map(o => <option key={o.id} value={o.id}>{o.username}</option>)}
                 </select>
-                <span style={{ fontSize: 12, color: t.textMuted }}>{h2h.shared.length} partite insieme</span>
+                <span style={{ fontSize: 12, color: t.textMuted }}>{tr('playerProfilePage.gamesTogetherCount', { count: h2h.shared.length })}</span>
               </div>
               {(() => {
                 const decided = h2h.meBetter + h2h.oppBetter
@@ -810,11 +813,11 @@ export default function PlayerProfilePage() {
                       <div style={{ width: `${mePct}%`, background: t.primary }} />
                       <div style={{ width: `${100 - mePct}%`, background: t.bgMuted }} />
                     </div>
-                    <div style={{ textAlign: 'center', fontSize: 11, color: t.textMuted, marginBottom: 12 }}>chi finisce più in alto</div>
-                    {row('arrivato più in alto', h2h.meBetter, h2h.oppBetter)}
-                    {row('vittorie del pod', h2h.myWins, h2h.oppWins)}
-                    {row('eliminazioni inflitte ⚔️', h2h.myKills, h2h.oppKills)}
-                    {h2h.undecided > 0 && <div style={{ fontSize: 11, color: t.textMuted, marginTop: 8 }}>{h2h.undecided} partite senza ordine di uscita non assegnate.</div>}
+                    <div style={{ textAlign: 'center', fontSize: 11, color: t.textMuted, marginBottom: 12 }}>{tr('playerProfilePage.whoFinishesHigherCaption')}</div>
+                    {row(tr('playerProfilePage.higherFinishLabel'), h2h.meBetter, h2h.oppBetter)}
+                    {row(tr('playerProfilePage.podWinsLabel'), h2h.myWins, h2h.oppWins)}
+                    {row(tr('playerProfilePage.eliminationsDealtLabel'), h2h.myKills, h2h.oppKills)}
+                    {h2h.undecided > 0 && <div style={{ fontSize: 11, color: t.textMuted, marginTop: 8 }}>{tr('playerProfilePage.undecidedGamesNote', { count: h2h.undecided })}</div>}
                   </>
                 )
               })()}
@@ -827,33 +830,33 @@ export default function PlayerProfilePage() {
       {total > 0 && (
         <div style={card}>
           <div onClick={() => setShowStats(v => !v)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>Statistiche dettagliate</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: t.text }}>{tr('playerProfilePage.detailedStatsTitle')}</span>
             <span style={{ fontSize: 12, color: t.textMuted, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              {showStats ? 'nascondi' : 'vittorie, kill, trend'}
+              {showStats ? tr('playerProfilePage.hide') : tr('playerProfilePage.detailedStatsSubtitle')}
               <span style={{ display: 'inline-block', transition: 'transform 0.15s', transform: showStats ? 'rotate(90deg)' : 'none' }}>▸</span>
             </span>
           </div>
           {showStats && (
             <div className="ct-section-open" style={{ marginTop: 14 }}>
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
-                {stat('Vittorie', wins, `${total - wins} sconfitte`)}
-                {stat('Nemesi', nemesis ? nemesis[0] : '—', nemesis ? `ti ha battuto ${nemesis[1]} volte` : 'nessuna')}
-                {stat('Mazzo preferito', favDeck ? favDeck[0] : '—', favDeck ? `${favDeck[1]} partite` : '')}
-                {stat('Piazz. medio', avgPlacement ? avgPlacement.toFixed(1) + '°' : '—', placed.length ? `su ${placed.length} partite` : 'nessun dato')}
-                {stat('Primo eliminato', placed.length ? `${firstOuts}×` : '—', placed.length ? 'volte fuori per primo' : 'nessun dato')}
+                {stat(tr('playerProfilePage.winsLabel'), wins, tr('playerProfilePage.lossesSub', { count: total - wins }))}
+                {stat(tr('playerProfilePage.nemesisLabel'), nemesis ? nemesis[0] : '—', nemesis ? tr('playerProfilePage.nemesisSub', { count: nemesis[1] }) : tr('playerProfilePage.nemesisNone'))}
+                {stat(tr('playerProfilePage.favDeckLabel'), favDeck ? favDeck[0] : '—', favDeck ? tr('gruppoPage.gamesCount', { count: favDeck[1] }) : '')}
+                {stat(tr('playerProfilePage.avgPlacementLabel'), avgPlacement ? avgPlacement.toFixed(1) + '°' : '—', placed.length ? tr('playerProfilePage.avgPlacementSub', { count: placed.length }) : tr('playerProfilePage.noDataLower'))}
+                {stat(tr('playerProfilePage.firstOutLabel'), placed.length ? tr('playerProfilePage.firstOutValue', { count: firstOuts }) : '—', placed.length ? tr('playerProfilePage.firstOutSub') : tr('playerProfilePage.noDataLower'))}
               </div>
               {hasKillData && (
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', paddingTop: 12, borderTop: `0.5px solid ${t.border}`, marginBottom: 12 }}>
-                  {stat('⚔️ Kill', kills, 'giocatori eliminati')}
-                  {stat('💀 Morti', deaths, 'volte eliminato')}
-                  {stat('😈 Arcinemico', archNemesis ? archNemesis[0] : '—', archNemesis ? `ti ha eliminato ${archNemesis[1]}×` : 'nessuno')}
-                  {stat('🎯 Preda preferita', favoritePrey ? favoritePrey[0] : '—', favoritePrey ? `eliminato ${favoritePrey[1]}×` : 'nessuna')}
+                  {stat(tr('playerProfilePage.killsLabel'), kills, tr('playerProfilePage.killsSub'))}
+                  {stat(tr('playerProfilePage.deathsLabel'), deaths, tr('playerProfilePage.deathsSub'))}
+                  {stat(tr('playerProfilePage.archNemesisLabel'), archNemesis ? archNemesis[0] : '—', archNemesis ? tr('playerProfilePage.archNemesisSub', { count: archNemesis[1] }) : tr('playerProfilePage.archNemesisNone'))}
+                  {stat(tr('playerProfilePage.favoritePreyLabel'), favoritePrey ? favoritePrey[0] : '—', favoritePrey ? tr('playerProfilePage.favoritePreySub', { count: favoritePrey[1] }) : tr('playerProfilePage.favoritePreyNone'))}
                 </div>
               )}
               {trend.length >= 2 && (
                 <div style={{ paddingTop: 12, borderTop: `0.5px solid ${t.border}` }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 4 }}>Andamento win rate</div>
-                  <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 12 }}>win rate cumulativo · {trend.length} partite</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 4 }}>{tr('deckProfilePage.winRateTrend')}</div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 12 }}>{tr('playerProfilePage.cumulativeWinRateCaption', { count: trend.length })}</div>
                   {(() => {
                     const W = 600, H = 120, pad = 6, n = trend.length
                     const x = (i) => pad + (i / (n - 1)) * (W - pad * 2)
@@ -878,28 +881,28 @@ export default function PlayerProfilePage() {
       )}
 
       {/* ── STORICO PARTITE ── */}
-      <div style={{ fontSize: 15, fontWeight: 700, color: t.text, margin: '20px 0 10px' }}>Storico partite</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: t.text, margin: '20px 0 10px' }}>{tr('deckProfilePage.historyTitle')}</div>
       {myGames.length === 0 ? (
-        <EmptyState icon="🃏" title="Nessuna partita" message="Questo giocatore non ha ancora giocato." />
+        <EmptyState icon="🃏" title={tr('deckProfilePage.noGamesTitle')} message={tr('playerProfilePage.noGamesMessage')} />
       ) : (
         myGames.map(g => {
           const me     = g.players.find(p => p.user.id === pid)
           const won    = me?.isWinner
           const winner = g.players.find(p => p.isWinner)
-          const date   = new Date(g.playedAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })
+          const date   = new Date(g.playedAt).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
           return (
             <div key={g.id} style={{ ...card, marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <div style={{ fontSize: 12, color: t.textMuted }}>{date} · {g.players.length} giocatori</div>
+                <div style={{ fontSize: 12, color: t.textMuted }}>{date} · {tr('gamePage.playersCount', { count: g.players.length })}</div>
                 <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20, background: won ? t.winBg : t.bgMuted, color: won ? t.win : t.textSub }}>
-                  {won ? 'Vittoria' : 'Sconfitta'}{me?.placement ? ` · ${me.placement}°` : ''}
+                  {won ? tr('deckProfilePage.win') : tr('deckProfilePage.loss')}{me?.placement ? ` · ${ordinal(me.placement, locale)}` : ''}
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <DeckThumb commander={me?.deck.commander} w={32} />
                 <div style={{ fontSize: 13, color: t.text }}>
                   {me?.deck.name}
-                  {!won && winner && <span style={{ color: t.textSub }}> · ha vinto {winner.user.username} ({winner.deck.name})</span>}
+                  {!won && winner && <span style={{ color: t.textSub }}>{tr('playerProfilePage.wonByInline', { username: winner.user.username, deck: winner.deck.name })}</span>}
                 </div>
               </div>
               {g.notes && <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4, fontStyle: 'italic' }}>{g.notes}</div>}
@@ -919,7 +922,7 @@ export default function PlayerProfilePage() {
               transition: 'all 0.18s ease',
             }}
           >
-            Esci dall'account
+            {tr('account.session.logout')}
           </button>
         </div>
       )}
@@ -934,9 +937,9 @@ export default function PlayerProfilePage() {
             style={{ background: t.bgSurface, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: `1px solid ${t.border}`, borderRadius: 18, padding: 20, maxWidth: 400, width: '100%', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ fontSize: 16, fontWeight: 700, color: t.text, marginBottom: 3 }}>Scegli il tuo avatar</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: t.text, marginBottom: 3 }}>{tr('playerProfilePage.pickerTitle')}</div>
             <div style={{ fontSize: 12, color: t.textSub, marginBottom: 14 }}>
-              Cerca una carta Magic e scegli la stampa che preferisci.
+              {tr('playerProfilePage.pickerSubtitle')}
             </div>
 
             {/* Ricerca */}
@@ -945,7 +948,7 @@ export default function PlayerProfilePage() {
                 <CommanderInput
                   value={pickerInput}
                   onChange={(name) => { setPickerInput(name); setPrintings([]); setSelectedPrintingId(null) }}
-                  placeholder="Cerca una carta Magic..."
+                  placeholder={tr('playerProfilePage.searchCardPlaceholder')}
                   style={{ ...inputSt, fontSize: 13 }}
                 />
               </div>
@@ -953,14 +956,14 @@ export default function PlayerProfilePage() {
                 onClick={() => fetchPrintings(pickerInput.trim())}
                 disabled={!pickerInput.trim() || loadingPrintings}
                 style={{ padding: '9px 14px', borderRadius: 10, border: `1px solid ${t.primary}`, background: t.primaryBg, color: t.primary, fontWeight: 700, fontSize: 13, cursor: pickerInput.trim() && !loadingPrintings ? 'pointer' : 'default', whiteSpace: 'nowrap', flexShrink: 0 }}
-              >{loadingPrintings ? '…' : 'Cerca →'}</button>
+              >{loadingPrintings ? '…' : tr('playerProfilePage.searchButton')}</button>
             </div>
 
             {/* Griglia stampe */}
             {printings.length > 0 && (
               <div style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 11, color: t.textSub, marginBottom: 8 }}>
-                  {printings.length} stampa{printings.length !== 1 ? '' : 'e'} — clicca per selezionare
+                  {tr('playerProfilePage.printingsCount', { count: printings.length })}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
                   {printings.map(p => (
@@ -988,7 +991,7 @@ export default function PlayerProfilePage() {
 
             {printings.length === 0 && !loadingPrintings && pickerInput.trim() && (
               <div style={{ textAlign: 'center', padding: '16px 0', fontSize: 12, color: t.textMuted, marginBottom: 14 }}>
-                Clicca "Cerca →" per vedere le stampe disponibili
+                {tr('playerProfilePage.clickSearchHint')}
               </div>
             )}
 
@@ -999,12 +1002,12 @@ export default function PlayerProfilePage() {
                 onClick={saveAvatar}
                 disabled={!pickerInput.trim() || !selectedPrintingId || savingAvatar}
               >
-                {savingAvatar ? 'Salvataggio...' : 'Usa come avatar'}
+                {savingAvatar ? tr('decksPage.saving') : tr('playerProfilePage.useAsAvatarButton')}
               </button>
               {avatarCard && (
-                <button style={btnDanger} onClick={removeAvatar} disabled={savingAvatar}>Rimuovi</button>
+                <button style={btnDanger} onClick={removeAvatar} disabled={savingAvatar}>{tr('adminPage.removeButton')}</button>
               )}
-              <button style={btnSecondary} onClick={() => setPickerOpen(false)}>Annulla</button>
+              <button style={btnSecondary} onClick={() => setPickerOpen(false)}>{tr('common.cancel')}</button>
             </div>
           </div>
         </div>
