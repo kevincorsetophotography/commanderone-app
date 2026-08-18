@@ -81,7 +81,7 @@ gratuito se il tetto giornaliero è esaurito o Groq non risponde)
 
 ## Roadmap
 
-> Stato aggiornato al 18/08/2026. Tutto il lavoro sotto è in `main`.
+> Stato aggiornato al 19/08/2026. Tutto il lavoro sotto è in `main`.
 
 ### Fatto di recente
 - Verifica email, reset/cambio password self-service, validazione username, cancellazione account self-service (GDPR — vedi sezione Multi-tenancy per il meccanismo "utente fantasma").
@@ -91,21 +91,22 @@ gratuito se il tetto giornaliero è esaurito o Groq non risponde)
 - Test di integrazione HTTP (supertest + Postgres embedded dedicato, `backend/test/`) — 37 test: auth, gruppi, `resolveGroup`/`requireGroupAdmin`, isolamento multi-tenant, cancellazione account.
 - Paginazione opzionale `GET /api/groups/:slug/games` (retrocompatibile — vedi sopra). `api.getGamesPage()` esiste lato frontend ma **nessuna pagina lo usa ancora**.
 - Link donazioni Ko-fi (`lib/links.js`, footer + pagina Account + card chiudibile in cima al Feed con snooze 30gg via `SupportBanner.jsx`) — chiudeva l'ultima voce economica in "Prossimi". Primo modo per validare se la community sostiene il progetto prima di investire in ads/IAP. (Un'icona in navbar era stata provata e scartata: affollava troppo, specie su mobile.)
-- **i18n Fase 1** (react-i18next + `locales/it.json`/`en.json`): flusso auth completo in IT/EN — Login, Onboarding, Account (con selettore lingua), `GroupJoinCreateForm`. Backend `/api/auth/*` migrato a codici errore (`validators.js`, `routes/auth.js`, `lib/accountDeletion.js`) invece di frasi italiane pronte, tradotti lato client via `lib/apiError.js`. Il resto del backend (14 file, ~150 messaggi) non è ancora migrato e continua a restituire italiano diretto — `apiError.js` lo passa attraverso intatto (nessuna regressione), ma per quelle route la UI resta italiana anche in modalità EN. Convenzione per le fasi successive: `useTheme()` usa già `t` per i token colore ovunque nel progetto, quindi `useTranslation()` va sempre aliasato `tr`.
+- **i18n Fase 1** (react-i18next + `locales/it.json`/`en.json`): flusso auth completo in IT/EN — Login, Onboarding, Account (con selettore lingua), `GroupJoinCreateForm`. Backend `/api/auth/*` migrato a codici errore (`validators.js`, `routes/auth.js`, `lib/accountDeletion.js`) invece di frasi italiane pronte, tradotti lato client via `lib/apiError.js`. Convenzione per le fasi successive: `useTheme()` usa già `t` per i token colore ovunque nel progetto, quindi `useTranslation()` va sempre aliasato `tr`.
+- **i18n Fase 2 — completa** (frontend applicativo + backend, vedi sotto): tutto il prodotto è ormai bilingue IT/EN, testi contenuto esclusi (vedi sotto).
 
 ### Prossimi
 - Wiring UI della paginazione partite (vedi sopra) — solo se/quando lo storico di un gruppo reale inizia a diventare pesante da caricare tutto insieme.
 
-### i18n Fase 2 — il resto dell'app
-**Frontend applicativo completo** (tutte le pagine + shell + componenti condivisi, oltre a tutto quanto già in Fase 1): `NotificationBell`/`GameSocial`/`DeckListPanel`/`BracketBadge`, `FeedPage`, `VerifyEmailPage`/`ResetPasswordPage`, `GamePage`, `GiocaPage`, `DecksPage`, `EventsPage`, `JudgePage`, `GruppoPage`, `EventDetailPage`, `DeckProfilePage`, `NewGamePage`, `SeasonRecap` (comprese le 3 slide del carousel Instagram scaricabile), `AdminPage` (823 righe), `DashboardPage` (1045 righe), `PlayerProfilePage` (1014 righe), `App.jsx` (navbar desktop/mobile, dock, disclaimer Fan Content), `SupportBanner.jsx`, `useFeedback.jsx` (default pulsanti conferma). Stesso pattern della Fase 1 (codici errore dal backend, `t`→`tr` per non fare ombra al tema, `locales/it.json`/`en.json`) applicato schermata per schermata, nessuna nuova libreria installata.
+### i18n Fase 2 — il resto dell'app (completata)
+**Frontend applicativo completo** (tutte le pagine + shell + componenti condivisi, oltre a tutto quanto già in Fase 1): `NotificationBell`/`GameSocial`/`DeckListPanel`/`BracketBadge`, `FeedPage`, `VerifyEmailPage`/`ResetPasswordPage`, `GamePage`, `GiocaPage`, `DecksPage`, `EventsPage`, `JudgePage`, `GruppoPage`, `EventDetailPage`, `DeckProfilePage`, `NewGamePage`, `SeasonRecap` (comprese le 3 slide del carousel Instagram scaricabile), `AdminPage` (823 righe), `DashboardPage` (1045 righe), `PlayerProfilePage` (1014 righe), `App.jsx` (navbar desktop/mobile, dock, disclaimer Fan Content), `SupportBanner.jsx`, `useFeedback.jsx` (default pulsanti conferma). Stesso pattern della Fase 1 (`t`→`tr` per non fare ombra al tema, `locales/it.json`/`en.json`) applicato schermata per schermata, nessuna nuova libreria installata.
+
+**Backend completo**: i 13 file che restituivano ancora frasi italiane pronte (`middleware/*`, `routes/{admin,decks,events,gamesV2,groups,judge,notifications,scryfall,stats}.js`, `app.js`) migrati a codici errore (150 codici in tutto tra `it.json`/`en.json`), stesso pattern di `routes/auth.js` in Fase 1. `apiError.js` generalizzato: qualunque codice con parametri dinamici (es. `GROUP_NAME_TOO_LONG` + `{{max}}`) passa l'intero payload dell'errore come variabili di interpolazione a `t()`, non solo il caso speciale `SOLE_ADMIN_BLOCKED` di prima. `lib/decklist.js` semplificato da un array di messaggi già in italiano (`result.errors`, in pratica sempre 0 o 1 elemento) a `{ valid, errorCode, errorParams }`. Lasciato volutamente fuori: `formatEventDate()` in `routes/events.js` compone il corpo delle notifiche evento con `toLocaleDateString('it-IT', ...)` — è contenuto di notifica generato lato server, non un messaggio d'errore, task separato se si vuole tradurre anche quello.
 
 Esplicitamente escluso (task di traduzione contenuti, non di stringhe UI): `PrivacyPage`/`TermsPage`/`GuidaPage`/`MarkdownDoc.jsx`, cioè il contenuto di `PRIVACY_POLICY.md`/`TERMINI_SERVIZIO.md`/`GUIDA_UTENTE.md`.
 
 Estrazioni di supporto nate durante la conversione, utili anche fuori da questa fase: `lib/timeAgo.js` (tempo relativo), `lib/ordinal.js` (piazzamento "1°" it / "1st" en, consolidato ovunque), `bracketLabel()` in `lib/brackets.js` e `seasonLabel()` in `lib/seasons.js` (le label bracket/stagione erano hardcoded in italiano nelle rispettive costanti — risolto in entrambi i casi traducendo a render-time da `locales/*.json` invece che nella costante; il campo `label`/`BRACKETS[id].label` originale resta come fallback per compatibilità), `categorizeCard()` in `lib/scryfall.js` ora ritorna chiavi interne stabili in inglese invece di stringhe già in italiano. Namespace `common` (`back`/`edit`/`delete`/`cancel`/`loading`/`save`) e `nav` per la UI generica riusabile.
 
 `lib/archetypes.js` lasciato in inglese di proposito: sono termini di gergo Magic (Aggro, Control, Combo, Stax...) usati così a livello internazionale, nessuna traduzione necessaria.
-
-**Backend — resta da fare**: i ~150 messaggi d'errore nei 13 file non ancora migrati a codici (`middleware/*`, `routes/{admin,decks,events,gamesV2,groups,judge,notifications,scryfall,stats}.js`, `app.js`). Finché non è fatto, quelle route restano in italiano fisso anche in modalità EN (`apiError.js` passa attraverso i messaggi grezzi, nessuna regressione, ma niente inglese lato server per errori non-auth).
 
 `gruppoPage.gamesCount`/`winsCount` (pluralizzate, "N partite · N vittorie") pensate per essere riusate quando si convertono Dashboard/PlayerProfile/DeckProfile, che hanno lo stesso pattern testuale.
 
