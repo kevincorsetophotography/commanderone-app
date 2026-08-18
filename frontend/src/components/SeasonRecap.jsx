@@ -1,8 +1,10 @@
 import { useRef, useMemo, useEffect, useState } from 'react'
 import html2canvas from 'html2canvas'
 import QRCode from 'qrcode'
+import { Trans, useTranslation } from 'react-i18next'
 import { useTheme } from '../hooks/useTheme'
 import { seasonOf } from '../lib/seasons'
+import { ordinal } from '../lib/ordinal'
 
 // ── palette brand ──────────────────────────────────────────────────────────────
 const C = {
@@ -93,7 +95,7 @@ function TopBar({ n, groupName }) {
 
 // ── SLIDE 1 ─────────────────────────────────────────────────────────────────────
 // Budget altezza: TopBar 42px | GLine+margin 11px | Title 64px | Champion(flex) | Podio 64px | Stats 54px | Footer 27px = 262px fissi
-function Slide1({ champion, second, third, label, imgUrls, total, uniquePlayers, deckCount, topDecks, groupName }) {
+function Slide1({ champion, second, third, label, imgUrls, total, uniquePlayers, deckCount, topDecks, groupName, tr, locale }) {
   function DeckChip({ playerId, col, size = 'sm' }) {
     const deck = topDecks?.[playerId]
     const art  = imgUrls?.[`bd_${playerId}`]
@@ -121,9 +123,9 @@ function Slide1({ champion, second, third, label, imgUrls, total, uniquePlayers,
 
       {/* Title block */}
       <div style={{ textAlign: 'center', padding: '0 16px 7px' }}>
-        <div style={{ fontSize: 9, fontWeight: 800, color: C.green, letterSpacing: '0.32em', textTransform: 'uppercase', marginBottom: 5 }}>RECAP STAGIONE</div>
+        <div style={{ fontSize: 9, fontWeight: 800, color: C.green, letterSpacing: '0.32em', textTransform: 'uppercase', marginBottom: 5 }}>{tr('seasonRecap.slide1.eyebrow')}</div>
         <div style={{ fontSize: 24, fontWeight: 900, color: C.text, textTransform: 'uppercase', letterSpacing: '0.03em', lineHeight: 1 }}>{label}</div>
-        <div style={{ fontSize: 8.5, color: C.sub, marginTop: 5, fontStyle: 'italic' }}>La stagione è appena finita. E questa è la nostra leggenda.</div>
+        <div style={{ fontSize: 8.5, color: C.sub, marginTop: 5, fontStyle: 'italic' }}>{tr('seasonRecap.slide1.tagline')}</div>
       </div>
 
       {/* Champion card — flex: 1 */}
@@ -135,7 +137,7 @@ function Slide1({ champion, second, third, label, imgUrls, total, uniquePlayers,
           border: `2px solid ${C.green}`,
           boxShadow: C.glowG,
         }}>
-          <div style={{ fontSize: 8.5, fontWeight: 800, color: C.green, letterSpacing: '0.28em', textTransform: 'uppercase', textAlign: 'center', marginBottom: 9 }}>CAMPIONE STAGIONALE</div>
+          <div style={{ fontSize: 8.5, fontWeight: 800, color: C.green, letterSpacing: '0.28em', textTransform: 'uppercase', textAlign: 'center', marginBottom: 9 }}>{tr('seasonRecap.slide1.championLabel')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <Avatar src={imgUrls[`p_${champion?.id}`]} name={champion?.username || '?'} size={50} ring={C.green} />
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -143,12 +145,12 @@ function Slide1({ champion, second, third, label, imgUrls, total, uniquePlayers,
                 {champion?.username || '—'}
               </div>
               <div style={{ fontSize: 10, color: C.sub, marginTop: 4 }}>
-                {champion?.wins || 0} vittorie · {champion?.games ? Math.round(champion.wins / champion.games * 100) : 0}% win rate
+                {tr('seasonRecap.slide1.championStats', { wins: champion?.wins || 0, pct: champion?.games ? Math.round(champion.wins / champion.games * 100) : 0 })}
               </div>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div style={{ fontSize: 42, fontWeight: 900, color: C.green, lineHeight: 1, textShadow: '0 0 24px rgba(52,240,143,0.75)' }}>{champion?.points ?? 0}</div>
-              <div style={{ fontSize: 9, color: C.sub, textTransform: 'uppercase', letterSpacing: '0.16em', marginTop: 3 }}>PUNTI</div>
+              <div style={{ fontSize: 9, color: C.sub, textTransform: 'uppercase', letterSpacing: '0.16em', marginTop: 3 }}>{tr('gruppoPage.points').toUpperCase()}</div>
             </div>
           </div>
           {/* Best deck del campione */}
@@ -160,14 +162,14 @@ function Slide1({ champion, second, third, label, imgUrls, total, uniquePlayers,
 
       {/* Podio */}
       <div style={{ display: 'flex', gap: 8, padding: '7px 14px 5px' }}>
-        {[{ p: second, col: C.silver, n: '2°' }, { p: third, col: C.bronze, n: '3°' }].map(({ p, col, n }) => (
+        {[{ p: second, col: C.silver, n: ordinal(2, locale) }, { p: third, col: C.bronze, n: ordinal(3, locale) }].map(({ p, col, n }) => (
           <div key={n} style={{ flex: 1, borderRadius: 12, padding: '9px 11px 8px', background: C.card, borderTop: `2px solid ${col}` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
               <div style={{ fontSize: 19, fontWeight: 900, color: col, lineHeight: 1, textShadow: `0 0 12px ${col}90`, minWidth: 20, flexShrink: 0 }}>{n}</div>
               <Avatar src={imgUrls[`p_${p?.id}`]} name={p?.username || '?'} size={24} ring={col} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p?.username || '—'}</div>
-                <div style={{ fontSize: 9, color: C.sub, marginTop: 2 }}>{p?.points ?? 0} pt · {p?.wins ?? 0} vitt.</div>
+                <div style={{ fontSize: 9, color: C.sub, marginTop: 2 }}>{tr('seasonRecap.slide1.podiumStats', { points: p?.points ?? 0, wins: p?.wins ?? 0 })}</div>
               </div>
             </div>
             {/* Best deck del giocatore */}
@@ -182,7 +184,7 @@ function Slide1({ champion, second, third, label, imgUrls, total, uniquePlayers,
       <div style={{ padding: '0 16px 8px' }}>
         <GLine col={C.muted} op={0.35} />
         <div style={{ display: 'flex', justifyContent: 'space-around', padding: '8px 0 7px' }}>
-          {[{ icon: '⚔️', v: total, l: 'PARTITE' }, { icon: '👥', v: uniquePlayers, l: 'GIOCATORI' }, { icon: '🃏', v: deckCount, l: 'DECK' }].map(({ icon, v, l }) => (
+          {[{ icon: '⚔️', v: total, l: tr('seasonRecap.slide1.statGames') }, { icon: '👥', v: uniquePlayers, l: tr('seasonRecap.slide1.statPlayers') }, { icon: '🃏', v: deckCount, l: tr('seasonRecap.slide1.statDecks') }].map(({ icon, v, l }) => (
             <div key={l} style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 17, lineHeight: 1, marginBottom: 4 }}>{icon}</div>
               <div style={{ fontSize: 21, fontWeight: 900, color: C.text, lineHeight: 1 }}>{v}</div>
@@ -195,7 +197,7 @@ function Slide1({ champion, second, third, label, imgUrls, total, uniquePlayers,
 
       {/* Footer ~27px */}
       <div style={{ padding: '5px 16px 12px', textAlign: 'center', fontSize: 9, letterSpacing: '0.04em', color: C.sub }}>
-        GRAZIE A TUTTI I GIOCATORI PER QUESTA STAGIONE&nbsp;<span style={{ color: C.green, fontWeight: 800 }}>INCREDIBILE</span>!
+        <Trans i18nKey="seasonRecap.slide1.footer" components={{ incredible: <span style={{ color: C.green, fontWeight: 800 }} /> }} />
       </div>
     </div>
   )
@@ -203,14 +205,14 @@ function Slide1({ champion, second, third, label, imgUrls, total, uniquePlayers,
 
 // ── SLIDE 2 ─────────────────────────────────────────────────────────────────────
 // Budget: TopBar 42px | GLine 7px | Title 72px | Grid(flex) | Footer 47px = 168px fissi; grid ~282px
-function Slide2({ total, uniquePlayers, deckCount, avgParticipation, topStreak, totalKills, groupName }) {
+function Slide2({ total, uniquePlayers, deckCount, avgParticipation, topStreak, totalKills, groupName, tr }) {
   const stats = [
-    { val: total,                  label: 'PARTITE\nDISPUTATE',       col: C.green,  icon: '⚔️' },
-    { val: uniquePlayers,          label: 'GIOCATORI\nATTIVI',         col: C.purple, icon: '👥' },
-    { val: deckCount,               label: 'DECK\nREGISTRATI',         col: C.cyan,   icon: '🃏' },
-    { val: `${avgParticipation}%`, label: 'PARTECIPAZIONE\nMEDIA',    col: C.cyan,   icon: '📊' },
-    { val: topStreak?.best || 0,   label: 'STREAK\nRECORD',           col: C.orange, icon: '🔥' },
-    { val: totalKills,             label: 'ELIMINAZIONI\nTOTALI',     col: C.purple, icon: '💀' },
+    { val: total,                  label: tr('seasonRecap.slide2.statGames'),         col: C.green,  icon: '⚔️' },
+    { val: uniquePlayers,          label: tr('seasonRecap.slide2.statPlayers'),       col: C.purple, icon: '👥' },
+    { val: deckCount,               label: tr('seasonRecap.slide2.statDecks'),        col: C.cyan,   icon: '🃏' },
+    { val: `${avgParticipation}%`, label: tr('seasonRecap.slide2.statParticipation'), col: C.cyan,   icon: '📊' },
+    { val: topStreak?.best || 0,   label: tr('seasonRecap.slide2.statStreak'),        col: C.orange, icon: '🔥' },
+    { val: totalKills,             label: tr('seasonRecap.slide2.statEliminations'),  col: C.purple, icon: '💀' },
   ]
   return (
     <div style={{
@@ -224,8 +226,8 @@ function Slide2({ total, uniquePlayers, deckCount, avgParticipation, topStreak, 
 
       {/* Title ~72px */}
       <div style={{ textAlign: 'center', padding: '2px 16px 14px' }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: C.sub, letterSpacing: '0.3em', textTransform: 'uppercase', lineHeight: 1, marginBottom: 3 }}>LA STAGIONE</div>
-        <div style={{ fontSize: 44, fontWeight: 900, color: C.green, letterSpacing: '0.05em', textTransform: 'uppercase', lineHeight: 1, textShadow: '0 0 36px rgba(52,240,143,0.6)' }}>IN NUMERI</div>
+        <div style={{ fontSize: 10, fontWeight: 600, color: C.sub, letterSpacing: '0.3em', textTransform: 'uppercase', lineHeight: 1, marginBottom: 3 }}>{tr('seasonRecap.slide2.titleEyebrow')}</div>
+        <div style={{ fontSize: 44, fontWeight: 900, color: C.green, letterSpacing: '0.05em', textTransform: 'uppercase', lineHeight: 1, textShadow: '0 0 36px rgba(52,240,143,0.6)' }}>{tr('seasonRecap.slide2.titleMain')}</div>
       </div>
 
       {/* Grid 2×3 — cuore della slide */}
@@ -261,15 +263,15 @@ function Slide2({ total, uniquePlayers, deckCount, avgParticipation, topStreak, 
 
 // ── SLIDE 3 ─────────────────────────────────────────────────────────────────────
 // Budget: TopBar 42px | GLine 7px | Title 47px | Awards 180px | Deck 72px | TY 39px | Footer(auto) 63px = 450px
-function Slide3({ mostWins, mostGames, topKiller, bestWinRate, topStreak, mostConsistent, spotlight, imgUrls, qrDataUrl, groupName }) {
+function Slide3({ mostWins, mostGames, topKiller, bestWinRate, topStreak, mostConsistent, spotlight, imgUrls, qrDataUrl, groupName, tr }) {
   const wr = p => p?.games ? Math.round(p.wins / p.games * 100) : 0
   const awards = [
-    { icon: '🏆', col: C.gold,   label: 'PIÙ VITTORIE', name: mostWins?.username || '—',       stat: `${mostWins?.wins || 0} vitt.` },
-    { icon: '🎯', col: C.cyan,   label: 'PIÙ PRESENTE', name: mostGames?.username || '—',      stat: `${mostGames?.games || 0} gg` },
-    { icon: '📈', col: C.green,  label: 'MIGLIOR WIN',  name: bestWinRate?.username || '—',    stat: `${wr(bestWinRate)}%` },
-    { icon: '⚔️', col: C.pink,   label: 'PIÙ SPIETATO', name: topKiller?.[0] || '—',          stat: `${topKiller?.[1] || 0} kill` },
-    { icon: '🔥', col: C.orange, label: 'STREAK',       name: topStreak?.username || '—',      stat: `${topStreak?.best || 0} vitt. di fila` },
-    { icon: '💎', col: C.purple, label: 'PIÙ COSTANTE', name: mostConsistent?.username || '—', stat: `${(mostConsistent?.avg || 0).toFixed(1)} pt/gg` },
+    { icon: '🏆', col: C.gold,   label: tr('seasonRecap.slide3.awardMostWins'),      name: mostWins?.username || '—',       stat: tr('seasonRecap.slide3.awardWinsStat', { count: mostWins?.wins || 0 }) },
+    { icon: '🎯', col: C.cyan,   label: tr('seasonRecap.slide3.awardMostGames'),     name: mostGames?.username || '—',      stat: tr('seasonRecap.slide3.awardGamesStat', { count: mostGames?.games || 0 }) },
+    { icon: '📈', col: C.green,  label: tr('seasonRecap.slide3.awardBestWinRate'),   name: bestWinRate?.username || '—',    stat: `${wr(bestWinRate)}%` },
+    { icon: '⚔️', col: C.pink,   label: tr('seasonRecap.slide3.awardMostRuthless'),  name: topKiller?.[0] || '—',          stat: tr('seasonRecap.slide3.awardKillsStat', { count: topKiller?.[1] || 0 }) },
+    { icon: '🔥', col: C.orange, label: tr('seasonRecap.slide3.awardStreak'),        name: topStreak?.username || '—',      stat: tr('seasonRecap.slide3.awardStreakStat', { count: topStreak?.best || 0 }) },
+    { icon: '💎', col: C.purple, label: tr('seasonRecap.slide3.awardMostConsistent'), name: mostConsistent?.username || '—', stat: tr('seasonRecap.slide3.awardConsistentStat', { value: (mostConsistent?.avg || 0).toFixed(1) }) },
   ]
   return (
     <div style={{
@@ -283,8 +285,8 @@ function Slide3({ mostWins, mostGames, topKiller, bestWinRate, topStreak, mostCo
 
       {/* Title */}
       <div style={{ textAlign: 'center', padding: '0 16px 5px' }}>
-        <div style={{ fontSize: 25, fontWeight: 900, color: C.text, letterSpacing: '0.1em', textTransform: 'uppercase', lineHeight: 1 }}>HALL OF FAME</div>
-        <div style={{ fontSize: 9, fontWeight: 700, color: C.green, letterSpacing: '0.22em', textTransform: 'uppercase', marginTop: 5 }}>I PROTAGONISTI DELLA STAGIONE</div>
+        <div style={{ fontSize: 25, fontWeight: 900, color: C.text, letterSpacing: '0.1em', textTransform: 'uppercase', lineHeight: 1 }}>{tr('seasonRecap.slide3.title')}</div>
+        <div style={{ fontSize: 9, fontWeight: 700, color: C.green, letterSpacing: '0.22em', textTransform: 'uppercase', marginTop: 5 }}>{tr('seasonRecap.slide3.subtitle')}</div>
       </div>
 
       {/* Award tiles 3×2 */}
@@ -306,7 +308,7 @@ function Slide3({ mostWins, mostGames, topKiller, bestWinRate, topStreak, mostCo
           {imgUrls?.deck && <img src={imgUrls.deck} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%', opacity: 0.72 }} />}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(7,8,15,0.88) 34%, rgba(7,8,15,0.05) 70%)' }}>
             <div style={{ padding: '0 14px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontSize: 8, fontWeight: 800, color: C.green, letterSpacing: '0.2em', textTransform: 'uppercase' }}>🃏 DECK DELLA STAGIONE</div>
+              <div style={{ fontSize: 8, fontWeight: 800, color: C.green, letterSpacing: '0.2em', textTransform: 'uppercase' }}>{tr('seasonRecap.slide3.deckOfSeason')}</div>
               <div style={{ fontSize: 17, fontWeight: 900, color: C.text, textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1, marginTop: 3 }}>{spotlight.name}</div>
             </div>
           </div>
@@ -315,8 +317,8 @@ function Slide3({ mostWins, mostGames, topKiller, bestWinRate, topStreak, mostCo
 
       {/* Thank you */}
       <div style={{ textAlign: 'center', padding: '5px 16px 2px' }}>
-        <div style={{ fontSize: 14, fontWeight: 900, color: C.green, fontStyle: 'italic', textShadow: '0 0 20px rgba(52,240,143,0.6)', letterSpacing: '0.02em' }}>GRAZIE A TUTTA LA COMMUNITY!</div>
-        <div style={{ fontSize: 9.5, color: C.sub, marginTop: 4, letterSpacing: '0.05em' }}>Ci vediamo alla prossima stagione!</div>
+        <div style={{ fontSize: 14, fontWeight: 900, color: C.green, fontStyle: 'italic', textShadow: '0 0 20px rgba(52,240,143,0.6)', letterSpacing: '0.02em' }}>{tr('seasonRecap.slide3.thanksCommunity')}</div>
+        <div style={{ fontSize: 9.5, color: C.sub, marginTop: 4, letterSpacing: '0.05em' }}>{tr('seasonRecap.slide3.seeYouNextSeason')}</div>
       </div>
 
       {/* Footer QR — spinto a fondo da marginTop:auto */}
@@ -330,7 +332,7 @@ function Slide3({ mostWins, mostGames, topKiller, bestWinRate, topStreak, mostCo
         </div>
         {qrDataUrl && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-            <div style={{ fontSize: 8, color: C.green, fontWeight: 700, letterSpacing: '0.1em' }}>SCOPRI DI PIÙ</div>
+            <div style={{ fontSize: 8, color: C.green, fontWeight: 700, letterSpacing: '0.1em' }}>{tr('seasonRecap.slide3.discoverMore')}</div>
             <img src={qrDataUrl} alt="QR" style={{ width: 50, height: 50, borderRadius: 8, imageRendering: 'pixelated' }} />
           </div>
         )}
@@ -342,6 +344,8 @@ function Slide3({ mostWins, mostGames, topKiller, bestWinRate, topStreak, mostCo
 // ── MODAL ──────────────────────────────────────────────────────────────────────
 export default function SeasonRecap({ season, seasonKey, seasons, games, playerStats, groupName, onClose }) {
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const refs = [useRef(null), useRef(null), useRef(null)]
   const [imgUrls, setImgUrls]     = useState({})
   const [qrDataUrl, setQrDataUrl] = useState(null)
@@ -419,13 +423,13 @@ export default function SeasonRecap({ season, seasonKey, seasons, games, playerS
   }
 
   const busy = dlState !== null || loading
-  const s1 = { champion: top3[0], second: top3[1], third: top3[2], label: seasonLabel, imgUrls, total: sg.length, uniquePlayers, deckCount, topDecks, groupName }
-  const s2 = { total: sg.length, uniquePlayers, deckCount, avgParticipation, topStreak, totalKills, groupName }
-  const s3 = { mostWins, mostGames, topKiller, bestWinRate, topStreak, mostConsistent, spotlight, imgUrls, qrDataUrl, groupName }
+  const s1 = { champion: top3[0], second: top3[1], third: top3[2], label: seasonLabel, imgUrls, total: sg.length, uniquePlayers, deckCount, topDecks, groupName, tr, locale }
+  const s2 = { total: sg.length, uniquePlayers, deckCount, avgParticipation, topStreak, totalKills, groupName, tr }
+  const s3 = { mostWins, mostGames, topKiller, bestWinRate, topStreak, mostConsistent, spotlight, imgUrls, qrDataUrl, groupName, tr }
   const info = [
-    { label: 'Slide 1 — Chi ha dominato?', sub: 'Campione + podio' },
-    { label: 'Slide 2 — La stagione in numeri', sub: 'Stats chiave' },
-    { label: 'Slide 3 — Hall of Fame', sub: 'Premi + QR code' },
+    { label: tr('seasonRecap.modal.slide1Title'), sub: tr('seasonRecap.modal.slide1Sub') },
+    { label: tr('seasonRecap.modal.slide2Title'), sub: tr('seasonRecap.modal.slide2Sub') },
+    { label: tr('seasonRecap.modal.slide3Title'), sub: tr('seasonRecap.modal.slide3Sub') },
   ]
 
   return (
@@ -434,12 +438,12 @@ export default function SeasonRecap({ season, seasonKey, seasons, games, playerS
 
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 900, color: t.text }}>Carousel Instagram</div>
-            <div style={{ fontSize: 10, color: t.textMuted, marginTop: 2 }}>3 slide · {W * SCALE}×{H * SCALE}px · 4:5</div>
+            <div style={{ fontSize: 15, fontWeight: 900, color: t.text }}>{tr('seasonRecap.modal.title')}</div>
+            <div style={{ fontSize: 10, color: t.textMuted, marginTop: 2 }}>{tr('seasonRecap.modal.dimensions', { w: W * SCALE, h: H * SCALE })}</div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={downloadAll} disabled={busy} style={{ padding: '8px 14px', borderRadius: 20, border: 'none', background: busy ? t.bgMuted : t.primary, color: busy ? t.textMuted : '#04111A', fontWeight: 800, fontSize: 12, cursor: busy ? 'default' : 'pointer' }}>
-              {dlState === 'all' ? '⏳ Download…' : loading ? '⏳ Caricamento…' : '⬇ Scarica Tutte'}
+              {dlState === 'all' ? tr('seasonRecap.modal.downloading') : loading ? tr('seasonRecap.modal.loadingImages') : tr('seasonRecap.modal.downloadAll')}
             </button>
             <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: '50%', border: `1px solid ${t.border}`, background: t.bgSurface, color: t.text, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
           </div>
@@ -453,7 +457,7 @@ export default function SeasonRecap({ season, seasonKey, seasons, games, playerS
                 <div style={{ fontSize: 10, color: t.textMuted }}>{info[idx].sub}</div>
               </div>
               <button onClick={() => downloadOne(idx)} disabled={busy} style={{ padding: '6px 12px', borderRadius: 16, border: `1px solid ${t.primaryBorder}`, background: t.primaryBg, color: t.primary, fontWeight: 700, fontSize: 11, cursor: busy ? 'default' : 'pointer' }}>
-                {dlState === idx ? '⏳…' : '⬇ PNG'}
+                {dlState === idx ? tr('seasonRecap.modal.downloadingShort') : tr('seasonRecap.modal.downloadPng')}
               </button>
             </div>
             <div style={{ overflowX: 'auto', borderRadius: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.7)' }}>
@@ -462,7 +466,7 @@ export default function SeasonRecap({ season, seasonKey, seasons, games, playerS
           </div>
         ))}
 
-        <p style={{ textAlign: 'center', fontSize: 10, color: t.textMuted, marginTop: 4 }}>Tocca fuori per chiudere</p>
+        <p style={{ textAlign: 'center', fontSize: 10, color: t.textMuted, marginTop: 4 }}>{tr('seasonRecap.modal.tapToClose')}</p>
       </div>
     </div>
   )
