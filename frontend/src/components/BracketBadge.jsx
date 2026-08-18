@@ -1,6 +1,8 @@
-import { BRACKETS } from '../lib/brackets'
+import { useTranslation } from 'react-i18next'
+import { BRACKETS, bracketLabel } from '../lib/brackets'
 
 export default function BracketBadge({ bracket, size = 'sm' }) {
+  const { t: tr } = useTranslation()
   if (!bracket || !BRACKETS[bracket]) return null
   const b = BRACKETS[bracket]
   const pad = size === 'lg' ? '3px 10px' : '2px 8px'
@@ -12,7 +14,7 @@ export default function BracketBadge({ bracket, size = 'sm' }) {
       background: b.color + '22', color: b.color, border: `1px solid ${b.color}55`,
       whiteSpace: 'nowrap',
     }}>
-      B{bracket} · {b.label}
+      B{bracket} · {bracketLabel(bracket, tr)}
     </span>
   )
 }

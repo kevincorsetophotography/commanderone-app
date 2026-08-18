@@ -119,6 +119,51 @@
   "common": {
     "back": "← Back"
   },
+  "brackets": {
+    "1": "Casual",
+    "2": "Balanced",
+    "3": "Powerful",
+    "4": "cEDH"
+  },
+  "colors": {
+    "W": "White",
+    "U": "Blue",
+    "B": "Black",
+    "R": "Red",
+    "G": "Green"
+  },
+  "decksPage": {
+    "title": "My decks",
+    "loadError": "Error loading decks",
+    "addDeck": "Add deck",
+    "deckNamePlaceholder": "Deck name *",
+    "commanderOptionalPlaceholder": "Commander (optional)",
+    "colorsLabel": "Colors:",
+    "detecting": "detecting...",
+    "levelLabel": "Level:",
+    "archetypeLabel": "Archetype:",
+    "nameRequired": "Name is required",
+    "saving": "Saving...",
+    "addSubmit": "+ Add deck",
+    "saveError": "Error saving",
+    "deckAdded": "Deck added",
+    "levelUpdated": "Level updated",
+    "levelUpdateError": "Error updating level",
+    "archetypeUpdated": "Archetype updated",
+    "archetypeUpdateError": "Error updating archetype",
+    "confirmDeleteTitle": "Delete this deck?",
+    "confirmDeleteMessage": "\"{{name}}\" will be permanently deleted.",
+    "confirmDeleteConfirm": "Delete",
+    "deckDeleted": "Deck deleted",
+    "deleteError": "Error deleting",
+    "openDeckProfile": "Open deck profile",
+    "emptyTitle": "No decks",
+    "emptyMessage": "Add your first deck using the form above: just a name and commander are enough.",
+    "archetypePlaceholder": "— archetype",
+    "levelPlaceholder": "— level",
+    "deckUpdated": "Deck updated",
+    "delete": "Delete"
+  },
   "gioca": {
     "logGame": "Log Game",
     "logGameSubtitle": "Add the result of a game you just finished",

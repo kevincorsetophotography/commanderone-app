@@ -119,6 +119,51 @@
   "common": {
     "back": "← Indietro"
   },
+  "brackets": {
+    "1": "Casual",
+    "2": "Bilanciato",
+    "3": "Potente",
+    "4": "cEDH"
+  },
+  "colors": {
+    "W": "Bianco",
+    "U": "Blu",
+    "B": "Nero",
+    "R": "Rosso",
+    "G": "Verde"
+  },
+  "decksPage": {
+    "title": "I miei mazzi",
+    "loadError": "Errore nel caricamento mazzi",
+    "addDeck": "Aggiungi mazzo",
+    "deckNamePlaceholder": "Nome mazzo *",
+    "commanderOptionalPlaceholder": "Commander (opzionale)",
+    "colorsLabel": "Colori:",
+    "detecting": "rilevamento...",
+    "levelLabel": "Livello:",
+    "archetypeLabel": "Archetipo:",
+    "nameRequired": "Il nome è obbligatorio",
+    "saving": "Salvataggio...",
+    "addSubmit": "+ Aggiungi mazzo",
+    "saveError": "Errore nel salvataggio",
+    "deckAdded": "Mazzo aggiunto",
+    "levelUpdated": "Livello aggiornato",
+    "levelUpdateError": "Errore aggiornamento livello",
+    "archetypeUpdated": "Archetipo aggiornato",
+    "archetypeUpdateError": "Errore aggiornamento archetipo",
+    "confirmDeleteTitle": "Eliminare il mazzo?",
+    "confirmDeleteMessage": "\"{{name}}\" verrà eliminato definitivamente.",
+    "confirmDeleteConfirm": "Elimina",
+    "deckDeleted": "Mazzo eliminato",
+    "deleteError": "Errore nella cancellazione",
+    "openDeckProfile": "Apri il profilo del mazzo",
+    "emptyTitle": "Nessun mazzo",
+    "emptyMessage": "Aggiungi il tuo primo mazzo dal modulo qui sopra: bastano nome e commander.",
+    "archetypePlaceholder": "— archetipo",
+    "levelPlaceholder": "— livello",
+    "deckUpdated": "Mazzo aggiornato",
+    "delete": "Elimina"
+  },
   "gioca": {
     "logGame": "Registra Partita",
     "logGameSubtitle": "Aggiungi il risultato di una partita appena finita",
