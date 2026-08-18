@@ -9,7 +9,7 @@ const judgeLimiter = rateLimit({
   limit: 5,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { error: 'Troppe domande al judge, riprova tra qualche minuto.' },
+  message: { error: 'JUDGE_RATE_LIMITED' },
   skip: () => process.env.NODE_ENV === 'test',
 });
 
@@ -18,7 +18,7 @@ router.post('/', judgeLimiter, async (req, res) => {
   const { question } = req.body;
 
   if (!question || typeof question !== 'string' || question.trim().length < 5) {
-    return res.status(400).json({ error: 'Domanda troppo corta o mancante (minimo 5 caratteri)' });
+    return res.status(400).json({ error: 'QUESTION_TOO_SHORT' });
   }
 
   const q = question.trim().slice(0, 500);
@@ -48,7 +48,7 @@ router.post('/', judgeLimiter, async (req, res) => {
       result = await lookupOnly(q);
     } catch (fallbackErr) {
       console.error('judge fallback error:', fallbackErr.message);
-      return res.status(500).json({ error: 'Errore durante la consulenza. Riprova tra qualche istante.' });
+      return res.status(500).json({ error: 'JUDGE_FALLBACK_FAILED' });
     }
   }
 
@@ -69,7 +69,7 @@ router.post('/', judgeLimiter, async (req, res) => {
     res.json({ ...result, llmUsed });
   } catch (err) {
     console.error('judge save error:', err.message);
-    res.status(500).json({ error: 'Errore durante il salvataggio della risposta.' });
+    res.status(500).json({ error: 'JUDGE_SAVE_FAILED' });
   }
 });
 
@@ -88,7 +88,7 @@ router.get('/', async (req, res) => {
     res.json(questions);
   } catch (err) {
     console.error('judge history error:', err.message);
-    res.status(500).json({ error: 'Errore nel caricamento dello storico' });
+    res.status(500).json({ error: 'JUDGE_HISTORY_LOAD_FAILED' });
   }
 });
 

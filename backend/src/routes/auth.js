@@ -207,7 +207,7 @@ router.patch('/profile', auth, async (req, res) => {
 router.delete('/account', auth, async (req, res) => {
   const { password } = req.body;
   if (typeof password !== 'string' || !password) {
-    return res.status(400).json({ error: 'Password richiesta per confermare' });
+    return res.status(400).json({ error: 'PASSWORD_REQUIRED_TO_CONFIRM' });
   }
 
   const user = await prisma.user.findUnique({ where: { id: req.user.id } });

@@ -1,11 +1,15 @@
 // Traduce un errore ritornato da api.js (vedi lib/api.js: throw { error, status, ... }).
 //
-// Fase 1 dell'i18n: solo /api/auth/* restituisce codici (es. "PASSWORD_TOO_SHORT").
-// Il resto del backend, non ancora migrato, restituisce ancora frasi italiane
-// pronte — t(key, { defaultValue }) le lascia passare intatte quando il
-// codice non esiste nel dizionario, invece di mostrare la chiave grezza.
-// Man mano che altre route vengono migrate, basta aggiungere i loro codici
-// a locales/it.json e en.json: questa funzione non cambia.
+// Tutto il backend restituisce codici (es. "PASSWORD_TOO_SHORT") — vedi i file
+// sotto routes/ e middleware/. I codici con parametri dinamici (es. "Nome
+// troppo lungo (max {{max}} caratteri)") arrivano col resto del payload
+// dell'errore accanto al codice (es. { error: 'GROUP_NAME_TOO_LONG', max: 60 }):
+// qui viene passato per intero come variabili di interpolazione, così le
+// stringhe in locales/*.json possono usare {{max}}, {{groups}}, ecc. senza che
+// questa funzione debba conoscerle una per una.
+// t(key, { defaultValue }) lascia passare intatto un eventuale codice ancora
+// senza traduzione invece di mostrare la chiave grezza — rete di sicurezza per
+// route non ancora aggiornate, non più il caso normale.
 export function translateApiError(err, t) {
   if (!err) return t('errors.GENERIC');
   const code = err.error;
@@ -16,5 +20,5 @@ export function translateApiError(err, t) {
     return t(key, { groups: err.groupNames.join(', ') });
   }
 
-  return t(`errors.${code}`, { defaultValue: code });
+  return t(`errors.${code}`, { ...err, defaultValue: code });
 }

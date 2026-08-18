@@ -20,11 +20,11 @@ const validateGamePayload = async (groupId, { players, winnerId, winnerDeckId })
   const normalizedWinnerDeckId = Number.parseInt(winnerDeckId, 10);
 
   if (!players || players.length < 3 || players.length > 5) {
-    return { error: 'Servono 3-5 giocatori' };
+    return { error: 'GAME_PLAYERS_COUNT_INVALID' };
   }
 
   if (!normalizedWinnerId || !normalizedWinnerDeckId) {
-    return { error: 'Vincitore richiesto' };
+    return { error: 'WINNER_REQUIRED' };
   }
 
   const normalizedPlayers = players.map((player) => ({
@@ -39,7 +39,7 @@ const validateGamePayload = async (groupId, { players, winnerId, winnerDeckId })
   }));
 
   if (normalizedPlayers.some((player) => !player.userId || !player.deckId)) {
-    return { error: 'Ogni giocatore deve avere utente e mazzo validi' };
+    return { error: 'INVALID_PLAYER_DATA' };
   }
 
   // Validazione eliminazioni: il killer deve essere al tavolo e diverso dal giocatore; il vincitore non viene eliminato
@@ -47,10 +47,10 @@ const validateGamePayload = async (groupId, { players, winnerId, winnerDeckId })
   for (const p of normalizedPlayers) {
     if (p.eliminatedById === null || Number.isNaN(p.eliminatedById)) { p.eliminatedById = null; continue; }
     if (!playerUserIds.has(p.eliminatedById)) {
-      return { error: 'Chi ha eliminato un giocatore deve essere al tavolo' };
+      return { error: 'ELIMINATOR_NOT_AT_TABLE' };
     }
     if (p.eliminatedById === p.userId) {
-      return { error: 'Un giocatore non può eliminare sé stesso' };
+      return { error: 'CANNOT_ELIMINATE_SELF' };
     }
     if (p.userId === normalizedWinnerId && p.deckId === normalizedWinnerDeckId) {
       p.eliminatedById = null; // il vincitore sopravvive
@@ -62,30 +62,30 @@ const validateGamePayload = async (groupId, { players, winnerId, winnerDeckId })
   if (withPlacement.length > 0) {
     const n = normalizedPlayers.length;
     if (withPlacement.length !== n) {
-      return { error: 'Specifica il piazzamento per tutti i giocatori o per nessuno' };
+      return { error: 'PLACEMENT_ALL_OR_NONE' };
     }
     const set = new Set(withPlacement.map((p) => p.placement));
     if (set.size !== n || [...set].some((v) => v < 1 || v > n)) {
-      return { error: `I piazzamenti devono essere i numeri da 1 a ${n}, senza ripetizioni` };
+      return { error: 'PLACEMENT_INVALID_RANGE', errorParams: { n } };
     }
     const winnerPlacement = normalizedPlayers.find(
       (p) => p.userId === normalizedWinnerId && p.deckId === normalizedWinnerDeckId
     )?.placement;
     if (winnerPlacement !== 1) {
-      return { error: 'Il vincitore deve avere piazzamento 1' };
+      return { error: 'WINNER_MUST_BE_FIRST' };
     }
   }
 
   const uniqueUsers = new Set(normalizedPlayers.map((player) => player.userId));
   if (uniqueUsers.size !== normalizedPlayers.length) {
-    return { error: 'Lo stesso giocatore non può essere al tavolo due volte' };
+    return { error: 'DUPLICATE_PLAYER' };
   }
 
   const winnerInGame = normalizedPlayers.some(
     (player) => player.userId === normalizedWinnerId && player.deckId === normalizedWinnerDeckId
   );
   if (!winnerInGame) {
-    return { error: 'Il vincitore deve essere nel tavolo' };
+    return { error: 'WINNER_NOT_AT_TABLE' };
   }
 
   const deckIds = normalizedPlayers.map((player) => player.deckId);
@@ -101,7 +101,7 @@ const validateGamePayload = async (groupId, { players, winnerId, winnerDeckId })
   });
 
   if (invalidDeckOwnership) {
-    return { error: 'Ogni deck deve appartenere al giocatore selezionato' };
+    return { error: 'DECK_OWNERSHIP_MISMATCH' };
   }
 
   return {
@@ -154,30 +154,30 @@ router.get('/', async (req, res) => {
 // GET /api/groups/:slug/games/:id — singola partita con dettagli (per la pagina partita)
 router.get('/:id', async (req, res) => {
   const gameId = parseGameId(req.params.id);
-  if (!gameId) return res.status(400).json({ error: 'ID partita non valido' });
+  if (!gameId) return res.status(400).json({ error: 'INVALID_GAME_ID' });
   try {
     const game = await prisma.game.findUnique({ where: { id: gameId }, include: gameInclude });
-    if (!game || game.groupId !== req.group.id) return res.status(404).json({ error: 'Partita non trovata' });
+    if (!game || game.groupId !== req.group.id) return res.status(404).json({ error: 'GAME_NOT_FOUND' });
     res.json(game);
   } catch (error) {
     console.error('get game error', error);
-    res.status(500).json({ error: 'Errore durante il caricamento della partita' });
+    res.status(500).json({ error: 'GAME_LOAD_FAILED' });
   }
 });
 
 router.post('/', async (req, res) => {
   const { players, winnerId, winnerDeckId, notes, playedAt } = req.body;
   if (notes && typeof notes === 'string' && notes.length > MAX_NOTES_LEN)
-    return res.status(400).json({ error: `Note troppo lunghe (max ${MAX_NOTES_LEN} caratteri)` });
+    return res.status(400).json({ error: 'NOTES_TOO_LONG', max: MAX_NOTES_LEN });
   const validation = await validateGamePayload(req.group.id, { players, winnerId, winnerDeckId });
 
   if (validation.error) {
-    return res.status(400).json({ error: validation.error });
+    return res.status(400).json({ error: validation.error, ...validation.errorParams });
   }
 
   const parsedDate = parsePlayedAt(playedAt);
   if (parsedDate === undefined) {
-    return res.status(400).json({ error: 'Data partita non valida' });
+    return res.status(400).json({ error: 'GAME_DATE_INVALID' });
   }
 
   const { normalizedPlayers, normalizedWinnerId, normalizedWinnerDeckId } = validation;
@@ -209,30 +209,30 @@ router.post('/', async (req, res) => {
 
 router.patch('/:id', async (req, res) => {
   const gameId = parseGameId(req.params.id);
-  if (!gameId) return res.status(400).json({ error: 'ID partita non valido' });
+  if (!gameId) return res.status(400).json({ error: 'INVALID_GAME_ID' });
 
   const game = await prisma.game.findUnique({
     where: { id: gameId },
     select: { id: true, groupId: true, createdByUserId: true }
   });
 
-  if (!game || game.groupId !== req.group.id) return res.status(404).json({ error: 'Partita non trovata' });
+  if (!game || game.groupId !== req.group.id) return res.status(404).json({ error: 'GAME_NOT_FOUND' });
   if (req.membership.role !== 'ADMIN' && game.createdByUserId !== req.user.id) {
-    return res.status(403).json({ error: 'Solo admin o creatore possono modificare la partita' });
+    return res.status(403).json({ error: 'GAME_UPDATE_FORBIDDEN' });
   }
 
   const { players, winnerId, winnerDeckId, notes, playedAt } = req.body;
   if (notes && typeof notes === 'string' && notes.length > MAX_NOTES_LEN)
-    return res.status(400).json({ error: `Note troppo lunghe (max ${MAX_NOTES_LEN} caratteri)` });
+    return res.status(400).json({ error: 'NOTES_TOO_LONG', max: MAX_NOTES_LEN });
   const validation = await validateGamePayload(req.group.id, { players, winnerId, winnerDeckId });
 
   if (validation.error) {
-    return res.status(400).json({ error: validation.error });
+    return res.status(400).json({ error: validation.error, ...validation.errorParams });
   }
 
   const parsedDate = parsePlayedAt(playedAt);
   if (parsedDate === undefined) {
-    return res.status(400).json({ error: 'Data partita non valida' });
+    return res.status(400).json({ error: 'GAME_DATE_INVALID' });
   }
 
   const { normalizedPlayers, normalizedWinnerId, normalizedWinnerDeckId } = validation;
@@ -264,16 +264,16 @@ router.patch('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   const gameId = parseGameId(req.params.id);
-  if (!gameId) return res.status(400).json({ error: 'ID partita non valido' });
+  if (!gameId) return res.status(400).json({ error: 'INVALID_GAME_ID' });
 
   const game = await prisma.game.findUnique({
     where: { id: gameId },
     select: { id: true, groupId: true, createdByUserId: true }
   });
 
-  if (!game || game.groupId !== req.group.id) return res.status(404).json({ error: 'Partita non trovata' });
+  if (!game || game.groupId !== req.group.id) return res.status(404).json({ error: 'GAME_NOT_FOUND' });
   if (req.membership.role !== 'ADMIN' && (!game.createdByUserId || game.createdByUserId !== req.user.id)) {
-    return res.status(403).json({ error: 'Solo admin o creatore possono eliminare la partita' });
+    return res.status(403).json({ error: 'GAME_DELETE_FORBIDDEN' });
   }
 
   await prisma.game.delete({ where: { id: game.id } });
@@ -294,11 +294,11 @@ const findGameInGroup = (req, gameId) =>
 // GET /api/groups/:slug/games/:id/comments — thread completo (caricato on-demand)
 router.get('/:id/comments', async (req, res) => {
   const gameId = parseGameId(req.params.id);
-  if (!gameId) return res.status(400).json({ error: 'ID partita non valido' });
+  if (!gameId) return res.status(400).json({ error: 'INVALID_GAME_ID' });
 
   try {
     const game = await findGameInGroup(req, gameId);
-    if (!game) return res.status(404).json({ error: 'Partita non trovata' });
+    if (!game) return res.status(404).json({ error: 'GAME_NOT_FOUND' });
 
     const comments = await prisma.comment.findMany({
       where: { gameId },
@@ -308,22 +308,22 @@ router.get('/:id/comments', async (req, res) => {
     res.json(comments);
   } catch (error) {
     console.error('list comments error', error);
-    res.status(500).json({ error: 'Errore durante il caricamento dei commenti' });
+    res.status(500).json({ error: 'COMMENTS_LOAD_FAILED' });
   }
 });
 
 // POST /api/groups/:slug/games/:id/comments — aggiungi un commento
 router.post('/:id/comments', async (req, res) => {
   const gameId = parseGameId(req.params.id);
-  if (!gameId) return res.status(400).json({ error: 'ID partita non valido' });
+  if (!gameId) return res.status(400).json({ error: 'INVALID_GAME_ID' });
 
   const body = typeof req.body.body === 'string' ? req.body.body.trim() : '';
-  if (!body) return res.status(400).json({ error: 'Il commento è vuoto' });
-  if (body.length > MAX_COMMENT_LEN) return res.status(400).json({ error: `Commento troppo lungo (max ${MAX_COMMENT_LEN} caratteri)` });
+  if (!body) return res.status(400).json({ error: 'COMMENT_EMPTY' });
+  if (body.length > MAX_COMMENT_LEN) return res.status(400).json({ error: 'COMMENT_TOO_LONG', max: MAX_COMMENT_LEN });
 
   try {
     const game = await findGameInGroup(req, gameId);
-    if (!game) return res.status(404).json({ error: 'Partita non trovata' });
+    if (!game) return res.status(404).json({ error: 'GAME_NOT_FOUND' });
 
     const comment = await prisma.comment.create({
       data: { gameId, userId: req.user.id, body },
@@ -343,7 +343,7 @@ router.post('/:id/comments', async (req, res) => {
     res.json(comment);
   } catch (error) {
     console.error('create comment error', error);
-    res.status(500).json({ error: 'Errore durante l\'invio del commento' });
+    res.status(500).json({ error: 'COMMENT_CREATE_FAILED' });
   }
 });
 
@@ -351,37 +351,37 @@ router.post('/:id/comments', async (req, res) => {
 router.delete('/:gameId/comments/:commentId', async (req, res) => {
   const gameId = parseGameId(req.params.gameId);
   const commentId = Number.parseInt(req.params.commentId, 10);
-  if (!gameId || !Number.isInteger(commentId)) return res.status(400).json({ error: 'ID non valido' });
+  if (!gameId || !Number.isInteger(commentId)) return res.status(400).json({ error: 'INVALID_ID' });
 
   try {
     const game = await findGameInGroup(req, gameId);
-    if (!game) return res.status(404).json({ error: 'Partita non trovata' });
+    if (!game) return res.status(404).json({ error: 'GAME_NOT_FOUND' });
 
     const comment = await prisma.comment.findUnique({ where: { id: commentId }, select: { id: true, gameId: true, userId: true } });
-    if (!comment || comment.gameId !== gameId) return res.status(404).json({ error: 'Commento non trovato' });
+    if (!comment || comment.gameId !== gameId) return res.status(404).json({ error: 'COMMENT_NOT_FOUND' });
     if (req.membership.role !== 'ADMIN' && comment.userId !== req.user.id) {
-      return res.status(403).json({ error: 'Puoi eliminare solo i tuoi commenti' });
+      return res.status(403).json({ error: 'COMMENT_DELETE_FORBIDDEN' });
     }
 
     await prisma.comment.delete({ where: { id: commentId } });
     res.json({ ok: true });
   } catch (error) {
     console.error('delete comment error', error);
-    res.status(500).json({ error: 'Errore durante l\'eliminazione del commento' });
+    res.status(500).json({ error: 'COMMENT_DELETE_FAILED' });
   }
 });
 
 // POST /api/groups/:slug/games/:id/reactions — toggle di una reazione emoji
 router.post('/:id/reactions', async (req, res) => {
   const gameId = parseGameId(req.params.id);
-  if (!gameId) return res.status(400).json({ error: 'ID partita non valido' });
+  if (!gameId) return res.status(400).json({ error: 'INVALID_GAME_ID' });
 
   const emoji = typeof req.body.emoji === 'string' ? req.body.emoji : '';
-  if (!REACTION_EMOJI.includes(emoji)) return res.status(400).json({ error: 'Reazione non valida' });
+  if (!REACTION_EMOJI.includes(emoji)) return res.status(400).json({ error: 'INVALID_REACTION' });
 
   try {
     const game = await findGameInGroup(req, gameId);
-    if (!game) return res.status(404).json({ error: 'Partita non trovata' });
+    if (!game) return res.status(404).json({ error: 'GAME_NOT_FOUND' });
 
     const existing = await prisma.reaction.findUnique({
       where: { gameId_userId_emoji: { gameId, userId: req.user.id, emoji } }
@@ -407,7 +407,7 @@ router.post('/:id/reactions', async (req, res) => {
     res.json({ reactions });
   } catch (error) {
     console.error('toggle reaction error', error);
-    res.status(500).json({ error: 'Errore durante la reazione' });
+    res.status(500).json({ error: 'REACTION_FAILED' });
   }
 });
 

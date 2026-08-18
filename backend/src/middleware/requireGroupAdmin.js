@@ -4,5 +4,5 @@ module.exports = (req, res, next) => {
     return next();
   }
 
-  return res.status(403).json({ error: 'Permessi amministratore richiesti' });
+  return res.status(403).json({ error: 'ADMIN_REQUIRED' });
 };

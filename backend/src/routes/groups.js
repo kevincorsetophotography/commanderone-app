@@ -29,15 +29,15 @@ async function uniqueInviteCode() {
 // POST /api/groups — crea un nuovo gruppo, il creatore ne diventa ADMIN
 router.post('/', auth, async (req, res) => {
   const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
-  if (!name) return res.status(400).json({ error: 'Nome gruppo richiesto' });
-  if (name.length > MAX_NAME) return res.status(400).json({ error: `Nome troppo lungo (max ${MAX_NAME} caratteri)` });
+  if (!name) return res.status(400).json({ error: 'GROUP_NAME_REQUIRED' });
+  if (name.length > MAX_NAME) return res.status(400).json({ error: 'GROUP_NAME_TOO_LONG', max: MAX_NAME });
 
   try {
     const slug = await uniqueSlug(slugify(name));
-    if (!slug) return res.status(500).json({ error: 'Impossibile generare uno slug univoco, riprova' });
+    if (!slug) return res.status(500).json({ error: 'SLUG_GENERATION_FAILED' });
 
     const inviteCode = await uniqueInviteCode();
-    if (!inviteCode) return res.status(500).json({ error: 'Impossibile generare un codice invito, riprova' });
+    if (!inviteCode) return res.status(500).json({ error: 'INVITE_CODE_GENERATION_FAILED' });
 
     const group = await prisma.group.create({
       data: {
@@ -48,27 +48,27 @@ router.post('/', auth, async (req, res) => {
     res.json({ id: group.id, name: group.name, slug: group.slug, inviteCode: group.inviteCode, role: 'ADMIN' });
   } catch (error) {
     console.error('create group error', error);
-    res.status(500).json({ error: 'Errore durante la creazione del gruppo' });
+    res.status(500).json({ error: 'GROUP_CREATE_FAILED' });
   }
 });
 
 // POST /api/groups/join — unisciti a un gruppo esistente con un codice invito
 router.post('/join', auth, async (req, res) => {
   const inviteCode = typeof req.body.inviteCode === 'string' ? req.body.inviteCode.trim() : '';
-  if (!inviteCode) return res.status(400).json({ error: 'Codice invito richiesto' });
+  if (!inviteCode) return res.status(400).json({ error: 'INVITE_CODE_REQUIRED' });
 
   try {
     const group = await prisma.group.findUnique({ where: { inviteCode } });
-    if (!group) return res.status(404).json({ error: 'Codice invito non valido' });
+    if (!group) return res.status(404).json({ error: 'INVITE_CODE_INVALID' });
 
     await prisma.groupMember.create({ data: { groupId: group.id, userId: req.user.id, role: 'PLAYER' } });
     res.json({ id: group.id, name: group.name, slug: group.slug, role: 'PLAYER' });
   } catch (error) {
     if (error.code === 'P2002') {
-      return res.status(409).json({ error: 'Sei già membro di questo gruppo' });
+      return res.status(409).json({ error: 'ALREADY_GROUP_MEMBER' });
     }
     console.error('join group error', error);
-    res.status(500).json({ error: 'Errore durante l\'adesione al gruppo' });
+    res.status(500).json({ error: 'GROUP_JOIN_FAILED' });
   }
 });
 
@@ -83,7 +83,7 @@ router.get('/mine', auth, async (req, res) => {
     res.json(memberships.map(m => ({ ...m.group, role: m.role })));
   } catch (error) {
     console.error('list my groups error', error);
-    res.status(500).json({ error: 'Errore durante il caricamento dei gruppi' });
+    res.status(500).json({ error: 'GROUPS_LOAD_FAILED' });
   }
 });
 
@@ -93,17 +93,17 @@ router.post('/:slug/invite-code/regenerate', auth, async (req, res) => {
     const membership = await prisma.groupMember.findFirst({
       where: { userId: req.user.id, group: { slug: req.params.slug } },
     });
-    if (!membership) return res.status(403).json({ error: 'Non fai parte di questo gruppo' });
-    if (membership.role !== 'ADMIN') return res.status(403).json({ error: 'Permessi amministratore richiesti' });
+    if (!membership) return res.status(403).json({ error: 'NOT_GROUP_MEMBER' });
+    if (membership.role !== 'ADMIN') return res.status(403).json({ error: 'ADMIN_REQUIRED' });
 
     const inviteCode = await uniqueInviteCode();
-    if (!inviteCode) return res.status(500).json({ error: 'Impossibile generare un codice invito, riprova' });
+    if (!inviteCode) return res.status(500).json({ error: 'INVITE_CODE_GENERATION_FAILED' });
 
     const group = await prisma.group.update({ where: { id: membership.groupId }, data: { inviteCode } });
     res.json({ inviteCode: group.inviteCode });
   } catch (error) {
     console.error('regenerate invite code error', error);
-    res.status(500).json({ error: 'Errore durante la rigenerazione del codice' });
+    res.status(500).json({ error: 'INVITE_CODE_REGENERATE_FAILED' });
   }
 });
 

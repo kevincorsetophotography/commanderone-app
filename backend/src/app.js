@@ -54,7 +54,7 @@ const authLimiter = rateLimit({
   limit: 20,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { error: 'Troppi tentativi, riprova tra qualche minuto.' },
+  message: { error: 'AUTH_RATE_LIMITED' },
   skip: skipInTest,
 });
 
@@ -64,7 +64,7 @@ const emailLimiter = rateLimit({
   limit: 5,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { error: 'Troppe richieste email, riprova tra un\'ora.' },
+  message: { error: 'EMAIL_RATE_LIMITED' },
   skip: skipInTest,
 });
 
@@ -74,7 +74,7 @@ const apiLimiter = rateLimit({
   limit: 300,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { error: 'Troppo traffico, rallenta un po\'.' },
+  message: { error: 'API_RATE_LIMITED' },
   skip: skipInTest,
 });
 
@@ -120,7 +120,7 @@ app.use('/api/scryfall', apiLimiter, scryfallRoutes);
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(500).json({ error: 'SERVER_ERROR' });
 });
 
 module.exports = app;

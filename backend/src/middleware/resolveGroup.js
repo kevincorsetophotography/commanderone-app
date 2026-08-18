@@ -5,18 +5,18 @@ const prisma = require('../lib/prisma');
 module.exports = async (req, res, next) => {
   try {
     const group = await prisma.group.findUnique({ where: { slug: req.params.slug } });
-    if (!group) return res.status(404).json({ error: 'Gruppo non trovato' });
+    if (!group) return res.status(404).json({ error: 'GROUP_NOT_FOUND' });
 
     const membership = await prisma.groupMember.findUnique({
       where: { groupId_userId: { groupId: group.id, userId: req.user.id } },
     });
-    if (!membership) return res.status(403).json({ error: 'Non fai parte di questo gruppo' });
+    if (!membership) return res.status(403).json({ error: 'NOT_GROUP_MEMBER' });
 
     req.group = { id: group.id, slug: group.slug, name: group.name };
     req.membership = { role: membership.role };
     next();
   } catch (error) {
     console.error('resolveGroup error', error);
-    res.status(500).json({ error: 'Errore durante la risoluzione del gruppo' });
+    res.status(500).json({ error: 'GROUP_RESOLVE_FAILED' });
   }
 };

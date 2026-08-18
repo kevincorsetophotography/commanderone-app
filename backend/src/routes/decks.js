@@ -30,13 +30,13 @@ router.get('/mine', async (req, res) => {
 // GET /api/groups/:slug/decks/:id — singolo mazzo con decklist (per il profilo mazzo)
 router.get('/:id', async (req, res) => {
   const deckId = parseDeckId(req.params.id);
-  if (!deckId) return res.status(400).json({ error: 'ID mazzo non valido' });
+  if (!deckId) return res.status(400).json({ error: 'INVALID_DECK_ID' });
 
   const deck = await prisma.deck.findUnique({
     where: { id: deckId },
     include: { user: { select: { id: true, username: true } } }
   });
-  if (!deck || deck.groupId !== req.group.id) return res.status(404).json({ error: 'Mazzo non trovato' });
+  if (!deck || deck.groupId !== req.group.id) return res.status(404).json({ error: 'DECK_NOT_FOUND' });
   res.json(deck);
 });
 
@@ -65,7 +65,7 @@ const resolveOwnerId = async (req, requestedUserId) => {
 // POST /api/groups/:slug/decks
 router.post('/', async (req, res) => {
   const { name, commander, colors, userId, bracket, archetype } = req.body;
-  if (!name) return res.status(400).json({ error: 'name richiesto' });
+  if (!name) return res.status(400).json({ error: 'DECK_NAME_REQUIRED' });
 
   const ownerId = await resolveOwnerId(req, userId);
 
@@ -84,11 +84,11 @@ router.post('/', async (req, res) => {
     res.json(deck);
   } catch (error) {
     if (error.code === 'P2002') {
-      return res.status(409).json({ error: 'Hai già un mazzo con questo nome' });
+      return res.status(409).json({ error: 'DECK_NAME_TAKEN' });
     }
 
     console.error('create deck error', error);
-    res.status(500).json({ error: 'Errore durante la creazione del mazzo' });
+    res.status(500).json({ error: 'DECK_CREATE_FAILED' });
   }
 });
 
@@ -97,11 +97,11 @@ const DECK_MAX_CHARS = 20_000;
 // PATCH /api/groups/:slug/decks/:id
 router.patch('/:id', async (req, res) => {
   const deckId = parseDeckId(req.params.id);
-  if (!deckId) return res.status(400).json({ error: 'ID mazzo non valido' });
+  if (!deckId) return res.status(400).json({ error: 'INVALID_DECK_ID' });
 
   const deck = await prisma.deck.findUnique({ where: { id: deckId } });
-  if (!deck || deck.groupId !== req.group.id) return res.status(404).json({ error: 'Mazzo non trovato' });
-  if (req.membership.role !== 'ADMIN' && deck.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+  if (!deck || deck.groupId !== req.group.id) return res.status(404).json({ error: 'DECK_NOT_FOUND' });
+  if (req.membership.role !== 'ADMIN' && deck.userId !== req.user.id) return res.status(403).json({ error: 'FORBIDDEN' });
 
   const { name, commander, colors, decklist, userId, bracket, archetype } = req.body;
   const nextOwnerId = userId === undefined ? deck.userId : await resolveOwnerId(req, userId);
@@ -109,11 +109,11 @@ router.patch('/:id', async (req, res) => {
   // Valida la decklist se viene fornita una lista non vuota
   if (typeof decklist === 'string' && decklist.trim()) {
     if (decklist.length > DECK_MAX_CHARS) {
-      return res.status(400).json({ error: `Decklist troppo lunga (max ${DECK_MAX_CHARS} caratteri)` });
+      return res.status(400).json({ error: 'DECKLIST_TOO_LONG', max: DECK_MAX_CHARS });
     }
     const result = await validateDecklist(decklist);
     if (!result.valid) {
-      return res.status(400).json({ error: result.errors.join(' · ') });
+      return res.status(400).json({ error: result.errorCode, ...result.errorParams });
     }
   }
 
@@ -131,32 +131,32 @@ router.patch('/:id', async (req, res) => {
     res.json(updated);
   } catch (error) {
     if (error.code === 'P2002') {
-      return res.status(409).json({ error: 'Hai già un mazzo con questo nome' });
+      return res.status(409).json({ error: 'DECK_NAME_TAKEN' });
     }
 
     console.error('update deck error', error);
-    res.status(500).json({ error: 'Errore durante l\'aggiornamento del mazzo' });
+    res.status(500).json({ error: 'DECK_UPDATE_FAILED' });
   }
 });
 
 // POST /api/groups/:slug/decks/import — importa una lista da Archidekt o Moxfield via URL
 router.post('/import', async (req, res) => {
   const { url } = req.body;
-  if (!url || typeof url !== 'string') return res.status(400).json({ error: 'URL richiesto' });
+  if (!url || typeof url !== 'string') return res.status(400).json({ error: 'URL_REQUIRED' });
 
   // Prevenzione SSRF: verifica l'hostname esatto invece di testare la stringa grezza
   let parsed;
-  try { parsed = new URL(url); } catch { return res.status(400).json({ error: 'URL non valido' }); }
+  try { parsed = new URL(url); } catch { return res.status(400).json({ error: 'URL_INVALID' }); }
   const host = parsed.hostname.toLowerCase();
 
   try {
     if (host === 'archidekt.com' || host.endsWith('.archidekt.com')) {
       const m = url.match(/decks\/(\d+)/);
-      if (!m) return res.status(400).json({ error: 'URL Archidekt non valido' });
+      if (!m) return res.status(400).json({ error: 'ARCHIDEKT_URL_INVALID' });
       const r = await fetch(`https://archidekt.com/api/decks/${m[1]}/`, {
         headers: { 'User-Agent': 'CommanderOneTracker/1.0' }
       });
-      if (!r.ok) return res.status(502).json({ error: 'Mazzo Archidekt non raggiungibile' });
+      if (!r.ok) return res.status(502).json({ error: 'ARCHIDEKT_UNREACHABLE' });
       const data = await r.json();
       const lines = [];
       let commander = null;
@@ -174,11 +174,11 @@ router.post('/import', async (req, res) => {
 
     if (host === 'moxfield.com' || host.endsWith('.moxfield.com')) {
       const m = url.match(/decks\/([A-Za-z0-9_-]+)/);
-      if (!m) return res.status(400).json({ error: 'URL Moxfield non valido' });
+      if (!m) return res.status(400).json({ error: 'MOXFIELD_URL_INVALID' });
       const r = await fetch(`https://api.moxfield.com/v2/decks/all/${m[1]}`, {
         headers: { 'User-Agent': 'CommanderOneTracker/1.0', 'Accept': 'application/json' }
       });
-      if (!r.ok) return res.status(502).json({ error: 'Moxfield blocca l\'import automatico. Apri il mazzo su Moxfield → More → Export → Text, copia tutto e incollalo qui sotto.' });
+      if (!r.ok) return res.status(502).json({ error: 'MOXFIELD_BLOCKED' });
       const data = await r.json();
       const commanderName = Object.values(data.commanders || {})[0]?.card?.name || null;
       const lines = Object.values(data.mainboard || {}).map(c => `${c.quantity || 1} ${c.card?.name}`).filter(l => !l.endsWith('undefined'));
@@ -186,32 +186,32 @@ router.post('/import', async (req, res) => {
       return res.json({ commander: commanderName, decklist, name: data.name || null });
     }
 
-    return res.status(400).json({ error: 'Supportati solo URL Archidekt o Moxfield' });
+    return res.status(400).json({ error: 'IMPORT_UNSUPPORTED_SITE' });
   } catch (error) {
     console.error('import deck error', error);
-    return res.status(500).json({ error: 'Errore durante l\'import' });
+    return res.status(500).json({ error: 'IMPORT_FAILED' });
   }
 });
 
 // DELETE /api/groups/:slug/decks/:id
 router.delete('/:id', async (req, res) => {
   const deckId = parseDeckId(req.params.id);
-  if (!deckId) return res.status(400).json({ error: 'ID mazzo non valido' });
+  if (!deckId) return res.status(400).json({ error: 'INVALID_DECK_ID' });
 
   const deck = await prisma.deck.findUnique({ where: { id: deckId } });
-  if (!deck || deck.groupId !== req.group.id) return res.status(404).json({ error: 'Mazzo non trovato' });
-  if (req.membership.role !== 'ADMIN' && deck.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+  if (!deck || deck.groupId !== req.group.id) return res.status(404).json({ error: 'DECK_NOT_FOUND' });
+  if (req.membership.role !== 'ADMIN' && deck.userId !== req.user.id) return res.status(403).json({ error: 'FORBIDDEN' });
 
   try {
     await prisma.deck.delete({ where: { id: deck.id } });
     res.json({ ok: true });
   } catch (error) {
     if (error.code === 'P2003') {
-      return res.status(409).json({ error: 'Non puoi eliminare un mazzo già usato in partita' });
+      return res.status(409).json({ error: 'DECK_IN_USE' });
     }
 
     console.error('delete deck error', error);
-    res.status(500).json({ error: 'Errore durante l\'eliminazione del mazzo' });
+    res.status(500).json({ error: 'DECK_DELETE_FAILED' });
   }
 });
 

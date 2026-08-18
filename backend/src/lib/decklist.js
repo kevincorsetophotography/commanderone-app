@@ -54,19 +54,17 @@ async function findMissingCards(names) {
 
 /**
  * Valida una decklist Commander.
- * @returns {Promise<{ valid: boolean, errors: string[] }>}
+ * @returns {Promise<{ valid: boolean, errorCode?: string, errorParams?: object }>}
  */
 async function validateDecklist(text) {
-  const errors = [];
   const { entries, total } = parseDecklist(text);
 
   if (entries.length === 0) {
-    return { valid: false, errors: ['La lista è vuota o in un formato non valido'] };
+    return { valid: false, errorCode: 'DECKLIST_EMPTY_OR_INVALID' };
   }
 
   if (total !== EXPECTED_TOTAL) {
-    errors.push(`Il mazzo ha ${total} carte (richieste ${EXPECTED_TOTAL} per Commander)`);
-    return { valid: false, errors };
+    return { valid: false, errorCode: 'DECKLIST_WRONG_CARD_COUNT', errorParams: { total, expected: EXPECTED_TOTAL } };
   }
 
   // Conteggio ok → verifica esistenza. Se Scryfall è giù, non blocchiamo (best-effort).
@@ -74,14 +72,14 @@ async function validateDecklist(text) {
     const uniqueNames = [...new Set(entries.map((e) => e.name))];
     const missing = await findMissingCards(uniqueNames);
     if (missing.length > 0) {
-      errors.push(`Carte non trovate su Scryfall: ${missing.join(', ')}`);
+      return { valid: false, errorCode: 'DECKLIST_CARDS_NOT_FOUND', errorParams: { cards: missing.join(', ') } };
     }
   } catch (err) {
     if (err.code !== 'SCRYFALL_UNREACHABLE') throw err;
     // Scryfall non raggiungibile: accettiamo basandoci sul solo conteggio.
   }
 
-  return { valid: errors.length === 0, errors };
+  return { valid: true };
 }
 
 module.exports = { parseDecklist, validateDecklist, EXPECTED_TOTAL };
