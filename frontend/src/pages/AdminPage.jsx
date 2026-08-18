@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import DeckListPanel from '../components/DeckListPanel'
 import { useTheme } from '../hooks/useTheme'
@@ -9,9 +10,10 @@ import { useFeedback } from '../hooks/useFeedback'
 import { useIsMobile } from '../hooks/useIsMobile'
 import CommanderInput from '../components/CommanderInput'
 import BracketBadge from '../components/BracketBadge'
-import { BRACKETS, BRACKET_OPTIONS } from '../lib/brackets'
+import { BRACKETS, BRACKET_OPTIONS, bracketLabel } from '../lib/brackets'
 import ArchetypeBadge from '../components/ArchetypeBadge'
 import { ARCHETYPE_OPTIONS } from '../lib/archetypes'
+import { ordinal } from '../lib/ordinal'
 
 const EMPTY_DECK_FORM = { userId: '', name: '', commander: '', colors: '', bracket: '', archetype: '' }
 const EMPTY_GAME_FORM = {
@@ -46,7 +48,7 @@ function SectionCard({ children, t }) {
   )
 }
 
-function InviteCodePanel({ t, buttonSecondary, toast }) {
+function InviteCodePanel({ t, tr, buttonSecondary, toast }) {
   const { activeGroup, refresh } = useGroup()
   const [regenerating, setRegenerating] = useState(false)
 
@@ -56,9 +58,9 @@ function InviteCodePanel({ t, buttonSecondary, toast }) {
     try {
       await api.regenerateInviteCode(activeGroup.slug)
       await refresh()
-      toast('Codice invito rigenerato', 'success')
+      toast(tr('adminPage.regenerateSuccess'), 'success')
     } catch (err) {
-      toast(err.error || 'Errore nella rigenerazione del codice', 'error')
+      toast(err.error || tr('adminPage.regenerateError'), 'error')
     } finally {
       setRegenerating(false)
     }
@@ -73,7 +75,7 @@ function InviteCodePanel({ t, buttonSecondary, toast }) {
         {activeGroup?.inviteCode || '····'}
       </div>
       <button style={buttonSecondary} onClick={regenerate} disabled={regenerating}>
-        {regenerating ? '...' : 'Rigenera codice'}
+        {regenerating ? '...' : tr('adminPage.regenerateButton')}
       </button>
     </div>
   )
@@ -110,6 +112,8 @@ function formatGameForEdit(game) {
 
 export default function AdminPage() {
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const { activeGroup } = useGroup()
   const navigate = useNavigate()
   const { toast, confirm } = useFeedback()
@@ -146,7 +150,7 @@ export default function AdminPage() {
       setDecks(decksData)
       setGames(gamesData)
     } catch (err) {
-      setError(err.error || 'Errore nel caricamento area admin')
+      setError(err.error || tr('adminPage.loadError'))
     } finally {
       setLoading(false)
     }
@@ -176,22 +180,22 @@ export default function AdminPage() {
     try {
       await api.updateMember(member.userId, { role: nextRole })
       await loadData()
-      toast(`${member.username} ora è ${nextRole}`, 'success')
+      toast(tr('adminPage.roleChanged', { username: member.username, role: nextRole === 'ADMIN' ? tr('account.groups.admin') : tr('account.groups.player') }), 'success')
     } catch (err) {
-      toast(err.error || 'Errore nell\'aggiornamento del ruolo', 'error')
+      toast(err.error || tr('adminPage.roleUpdateError'), 'error')
     }
   }
 
   const removeMember = async (member) => {
-    const ok = await confirm({ title: 'Rimuovere dal gruppo?', message: `${member.username} perderà l'accesso a questo gruppo. Le sue partite e mazzi restano nello storico.`, confirmLabel: 'Rimuovi', danger: true })
+    const ok = await confirm({ title: tr('adminPage.confirmRemoveMemberTitle'), message: tr('adminPage.confirmRemoveMemberMessage', { username: member.username }), confirmLabel: tr('adminPage.confirmRemoveMemberConfirm'), danger: true })
     if (!ok) return
 
     try {
       await api.removeMember(member.userId)
       await loadData()
-      toast('Membro rimosso dal gruppo', 'success')
+      toast(tr('adminPage.memberRemoved'), 'success')
     } catch (err) {
-      toast(err.error || 'Errore nella rimozione del membro', 'error')
+      toast(err.error || tr('adminPage.memberRemoveError'), 'error')
     }
   }
 
@@ -273,10 +277,10 @@ export default function AdminPage() {
       })
       setDeckForm(EMPTY_DECK_FORM)
       await loadData()
-      toast('Mazzo creato', 'success')
+      toast(tr('adminPage.deckCreated'), 'success')
     } catch (err) {
-      setError(err.error || 'Errore nel salvataggio mazzo')
-      toast(err.error || 'Errore nel salvataggio mazzo', 'error')
+      setError(err.error || tr('adminPage.deckSaveError'))
+      toast(err.error || tr('adminPage.deckSaveError'), 'error')
     } finally {
       setSaving(false)
     }
@@ -297,25 +301,25 @@ export default function AdminPage() {
       setEditingDeckId(null)
       setEditingDeckForm(EMPTY_DECK_FORM)
       await loadData()
-      toast('Mazzo aggiornato', 'success')
+      toast(tr('adminPage.deckUpdated'), 'success')
     } catch (err) {
-      setError(err.error || 'Errore nell\'aggiornamento mazzo')
-      toast(err.error || 'Errore nell\'aggiornamento mazzo', 'error')
+      setError(err.error || tr('adminPage.deckUpdateError'))
+      toast(err.error || tr('adminPage.deckUpdateError'), 'error')
     } finally {
       setSaving(false)
     }
   }
 
   const removeDeck = async (deckId) => {
-    const ok = await confirm({ title: 'Eliminare mazzo?', message: 'Il mazzo verrà eliminato definitivamente.', confirmLabel: 'Elimina', danger: true })
+    const ok = await confirm({ title: tr('adminPage.confirmDeleteDeckTitle'), message: tr('adminPage.confirmDeleteDeckMessage'), confirmLabel: tr('common.delete'), danger: true })
     if (!ok) return
 
     try {
       await api.deleteDeck(deckId)
       await loadData()
-      toast('Mazzo eliminato', 'success')
+      toast(tr('adminPage.deckDeleted'), 'success')
     } catch (err) {
-      toast(err.error || 'Errore nell\'eliminazione mazzo', 'error')
+      toast(err.error || tr('adminPage.deckDeleteError'), 'error')
     }
   }
 
@@ -352,16 +356,16 @@ export default function AdminPage() {
       await api.updateGame(gameForm.id, payload)
       setGameForm(EMPTY_GAME_FORM)
       await loadData()
-      toast('Partita aggiornata', 'success')
+      toast(tr('adminPage.gameUpdated'), 'success')
     } catch (err) {
-      setError(err.error || 'Errore nell\'aggiornamento partita')
+      setError(err.error || tr('adminPage.gameUpdateError'))
     } finally {
       setSaving(false)
     }
   }
 
   const removeGame = async (gameId) => {
-    const ok = await confirm({ title: 'Eliminare partita?', message: 'La partita verrà eliminata definitivamente.', confirmLabel: 'Elimina', danger: true })
+    const ok = await confirm({ title: tr('adminPage.confirmDeleteGameTitle'), message: tr('adminPage.confirmDeleteGameMessage'), confirmLabel: tr('common.delete'), danger: true })
     if (!ok) return
 
     try {
@@ -370,9 +374,9 @@ export default function AdminPage() {
         setGameForm(EMPTY_GAME_FORM)
       }
       await loadData()
-      toast('Partita eliminata', 'success')
+      toast(tr('adminPage.gameDeleted'), 'success')
     } catch (err) {
-      toast(err.error || 'Errore nell\'eliminazione partita', 'error')
+      toast(err.error || tr('adminPage.gameDeleteError'), 'error')
     }
   }
 
@@ -410,9 +414,9 @@ export default function AdminPage() {
       a.download = `${activeGroup?.slug || 'gruppo'}-backup-${new Date().toISOString().slice(0, 10)}.json`
       a.click()
       URL.revokeObjectURL(url)
-      toast('Backup scaricato', 'success')
+      toast(tr('adminPage.backupDownloaded'), 'success')
     } catch (err) {
-      toast(err.error || 'Errore durante l\'export', 'error')
+      toast(err.error || tr('adminPage.exportError'), 'error')
     }
   }
 
@@ -458,14 +462,16 @@ export default function AdminPage() {
   }
 
   if (loading) {
-    return <div style={{ color: t.textSub, fontSize: 14, padding: '2rem' }}>Caricamento area admin...</div>
+    return <div style={{ color: t.textSub, fontSize: 14, padding: '2rem' }}>{tr('adminPage.loadingAdmin')}</div>
   }
+
+  const TAB_LABEL_KEY = { utenti: 'tabUsers', mazzi: 'tabDecks', partite: 'tabGames' }
 
   return (
     <div style={{ color: t.text }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 18, fontWeight: 600 }}>Amministrazione</div>
-        <button onClick={exportData} style={{ ...buttonSecondary, fontWeight: 600 }}>⬇ Esporta backup (JSON)</button>
+        <div style={{ fontSize: 18, fontWeight: 600 }}>{tr('adminPage.title')}</div>
+        <button onClick={exportData} style={{ ...buttonSecondary, fontWeight: 600 }}>{tr('adminPage.exportBackup')}</button>
       </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         {['utenti', 'mazzi', 'partite'].map((item) => (
@@ -479,7 +485,7 @@ export default function AdminPage() {
               borderColor: tab === item ? t.primary : t.border
             }}
           >
-            {item.charAt(0).toUpperCase() + item.slice(1)}
+            {tr(`adminPage.${TAB_LABEL_KEY[item]}`)}
           </button>
         ))}
       </div>
@@ -489,27 +495,27 @@ export default function AdminPage() {
       {tab === 'utenti' && (
         <div>
           <SectionCard t={t}>
-            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>Invita nuovi membri</div>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{tr('adminPage.inviteNewMembers')}</div>
             <div style={{ fontSize: 13, color: t.textSub, marginBottom: 12 }}>
-              Chi vuole unirsi crea un account e poi inserisce il codice invito del gruppo. Nuovi utenti non si creano più da qui.
+              {tr('adminPage.inviteHint')}
             </div>
-            <InviteCodePanel t={t} buttonSecondary={buttonSecondary} toast={toast} />
+            <InviteCodePanel t={t} tr={tr} buttonSecondary={buttonSecondary} toast={toast} />
           </SectionCard>
 
           {members.map((member) => (
             <SectionCard key={member.userId} t={t}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontWeight: 600, color: t.text }}>{member.username} <span style={{ color: t.textSub, fontWeight: 500 }}>· {member.role}</span></div>
+                  <div style={{ fontWeight: 600, color: t.text }}>{member.username} <span style={{ color: t.textSub, fontWeight: 500 }}>· {member.role === 'ADMIN' ? tr('account.groups.admin') : tr('account.groups.player')}</span></div>
                   <div style={{ fontSize: 12, color: t.textSub }}>
-                    Mazzi: {member.decks} · Presenze: {member.games}
+                    {tr('adminPage.memberStats', { decks: member.decks, games: member.games })}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button style={buttonSecondary} onClick={() => toggleMemberRole(member)}>
-                    {member.role === 'ADMIN' ? 'Rendi PLAYER' : 'Rendi ADMIN'}
+                    {member.role === 'ADMIN' ? tr('adminPage.makePlayer') : tr('adminPage.makeAdmin')}
                   </button>
-                  <button style={buttonDanger} onClick={() => removeMember(member)}>Rimuovi dal gruppo</button>
+                  <button style={buttonDanger} onClick={() => removeMember(member)}>{tr('adminPage.removeFromGroup')}</button>
                 </div>
               </div>
             </SectionCard>
@@ -520,36 +526,36 @@ export default function AdminPage() {
       {tab === 'mazzi' && (
         <div>
           <SectionCard t={t}>
-            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Crea mazzo</div>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>{tr('adminPage.createDeck')}</div>
             <form onSubmit={submitDeck} style={{ display: 'grid', gridTemplateColumns: cols('1fr 2fr 2fr 1fr 1fr 1fr auto'), gap: 8 }}>
               <select style={inputStyle} value={deckForm.userId} onChange={(event) => setDeckForm((current) => ({ ...current, userId: event.target.value }))}>
-                <option value="">Owner</option>
+                <option value="">{tr('adminPage.ownerPlaceholder')}</option>
                 {members.map((member) => <option key={member.userId} value={member.userId}>{member.username}</option>)}
               </select>
-              <input style={inputStyle} placeholder="Nome mazzo" value={deckForm.name} onChange={(event) => setDeckForm((current) => ({ ...current, name: event.target.value }))} />
+              <input style={inputStyle} placeholder={tr('deckList.deckName')} value={deckForm.name} onChange={(event) => setDeckForm((current) => ({ ...current, name: event.target.value }))} />
               <CommanderInput
                 style={inputStyle}
-                placeholder="Commander"
+                placeholder={tr('deckList.commander')}
                 value={deckForm.commander}
                 onChange={(name) => setDeckForm((current) => ({ ...current, commander: name }))}
                 onBlur={handleDeckCommanderBlur}
               />
               <input
                 style={{ ...inputStyle, color: detectingDeckColors ? t.primary : t.text }}
-                placeholder={detectingDeckColors ? 'rilevamento...' : 'Colori es. WUG'}
+                placeholder={detectingDeckColors ? tr('decksPage.detecting') : tr('adminPage.colorsPlaceholder')}
                 value={deckForm.colors}
                 onChange={(event) => setDeckForm((current) => ({ ...current, colors: event.target.value }))}
                 readOnly={detectingDeckColors}
               />
               <select style={inputStyle} value={deckForm.bracket} onChange={(event) => setDeckForm((current) => ({ ...current, bracket: event.target.value }))}>
-                <option value="">Livello</option>
-                {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {BRACKETS[b].label}</option>)}
+                <option value="">{tr('adminPage.levelPlaceholder')}</option>
+                {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {bracketLabel(b, tr)}</option>)}
               </select>
               <select style={inputStyle} value={deckForm.archetype} onChange={(event) => setDeckForm((current) => ({ ...current, archetype: event.target.value }))}>
-                <option value="">Archetipo</option>
+                <option value="">{tr('adminPage.archetypePlaceholder')}</option>
                 {ARCHETYPE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
-              <button type="submit" style={buttonPrimary} disabled={saving}>Crea</button>
+              <button type="submit" style={buttonPrimary} disabled={saving}>{tr('adminPage.createButton')}</button>
             </form>
           </SectionCard>
 
@@ -569,21 +575,21 @@ export default function AdminPage() {
                   />
                   <input
                     style={{ ...inputStyle, color: detectingEditColors ? t.primary : t.text }}
-                    placeholder={detectingEditColors ? 'rilevamento...' : ''}
+                    placeholder={detectingEditColors ? tr('decksPage.detecting') : ''}
                     value={editingDeckForm.colors}
                     onChange={(event) => setEditingDeckForm((current) => ({ ...current, colors: event.target.value }))}
                     readOnly={detectingEditColors}
                   />
                   <select style={inputStyle} value={editingDeckForm.bracket} onChange={(event) => setEditingDeckForm((current) => ({ ...current, bracket: event.target.value }))}>
-                    <option value="">Livello</option>
+                    <option value="">{tr('adminPage.levelPlaceholder')}</option>
                     {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b}</option>)}
                   </select>
                   <select style={inputStyle} value={editingDeckForm.archetype} onChange={(event) => setEditingDeckForm((current) => ({ ...current, archetype: event.target.value }))}>
-                    <option value="">Archetipo</option>
+                    <option value="">{tr('adminPage.archetypePlaceholder')}</option>
                     {ARCHETYPE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
                   </select>
-                  <button style={buttonPrimary} onClick={() => saveDeckEdit(deck.id)}>Salva</button>
-                  <button style={buttonSecondary} onClick={() => setEditingDeckId(null)}>Annulla</button>
+                  <button style={buttonPrimary} onClick={() => saveDeckEdit(deck.id)}>{tr('common.save')}</button>
+                  <button style={buttonSecondary} onClick={() => setEditingDeckId(null)}>{tr('common.cancel')}</button>
                 </div>
               ) : (
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -597,12 +603,12 @@ export default function AdminPage() {
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: t.text, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span onClick={() => navigate(`/mazzo/${deck.id}`)} title="Apri il profilo del mazzo" style={{ cursor: 'pointer' }}>{deck.name}</span>
+                      <span onClick={() => navigate(`/mazzo/${deck.id}`)} title={tr('decksPage.openDeckProfile')} style={{ cursor: 'pointer' }}>{deck.name}</span>
                       <ArchetypeBadge archetype={deck.archetype} />
                       <BracketBadge bracket={deck.bracket} />
                     </div>
                     <div style={{ fontSize: 12, color: t.textSub }}>
-                      {deck.user.username} · {deck.commander || 'Nessun commander'} · {deck.colors || 'Senza colori'}
+                      {deck.user.username} · {deck.commander || tr('deckProfilePage.noCommander')} · {deck.colors || tr('adminPage.deckNoColors')}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
@@ -616,11 +622,11 @@ export default function AdminPage() {
                           colors: newColors || undefined
                         })
                         await loadData()
-                        toast('Lista salvata', 'success')
+                        toast(tr('adminPage.listSaved'), 'success')
                       }}
                     />
-                    <button style={buttonSecondary} onClick={() => startDeckEdit(deck)}>Modifica</button>
-                    <button style={buttonDanger} onClick={() => removeDeck(deck.id)}>Elimina</button>
+                    <button style={buttonSecondary} onClick={() => startDeckEdit(deck)}>{tr('common.edit')}</button>
+                    <button style={buttonDanger} onClick={() => removeDeck(deck.id)}>{tr('common.delete')}</button>
                   </div>
                 </div>
               )}
@@ -632,35 +638,35 @@ export default function AdminPage() {
       {tab === 'partite' && (
         <div>
           <SectionCard t={t}>
-            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>Gestione partite</div>
-            <div style={{ fontSize: 13, color: '#888' }}>Per creare nuove partite puoi continuare a usare la pagina "+ Partita". Qui puoi modificare o eliminare le partite esistenti.</div>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{tr('adminPage.manageGames')}</div>
+            <div style={{ fontSize: 13, color: '#888' }}>{tr('adminPage.manageGamesHint')}</div>
           </SectionCard>
 
           {gameForm.id && (
             <SectionCard t={t}>
-              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Modifica partita #{gameForm.id}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>{tr('adminPage.editGameTitle', { id: gameForm.id })}</div>
               <form onSubmit={submitGameEdit}>
                 {gameForm.slots.map((slot, index) => (
                   <div key={index} style={{ display: 'grid', gridTemplateColumns: cols('40px 1fr 1fr auto'), gap: 8, marginBottom: 8, alignItems: 'center' }}>
                     <div style={{ textAlign: 'center', color: t.textSub }}>{index + 1}</div>
                     <select style={inputStyle} value={slot.userId} onChange={(event) => updateGameSlot(index, 'userId', event.target.value)}>
-                      <option value="">Giocatore</option>
+                      <option value="">{tr('adminPage.playerPlaceholder')}</option>
                       {members.map((member) => <option key={member.userId} value={member.userId}>{member.username}</option>)}
                     </select>
                     <select style={inputStyle} value={slot.deckId} onChange={(event) => updateGameSlot(index, 'deckId', event.target.value)} disabled={!slot.userId}>
-                      <option value="">Mazzo</option>
+                      <option value="">{tr('adminPage.deckPlaceholderPlain')}</option>
                       {(decksByUser[slot.userId] || []).map((deck) => <option key={deck.id} value={deck.id}>{deck.name}</option>)}
                     </select>
-                    {index >= 3 ? <button type="button" style={buttonSecondary} onClick={() => removeGameSlot(index)}>Rimuovi</button> : <div />}
+                    {index >= 3 ? <button type="button" style={buttonSecondary} onClick={() => removeGameSlot(index)}>{tr('adminPage.removeButton')}</button> : <div />}
                   </div>
                 ))}
 
                 <div style={{ marginBottom: 12 }}>
-                  <button type="button" style={buttonSecondary} onClick={addGameSlot}>Aggiungi giocatore</button>
+                  <button type="button" style={buttonSecondary} onClick={addGameSlot}>{tr('adminPage.addPlayerButton')}</button>
                 </div>
 
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, color: t.textSub, marginBottom: 4 }}>Data partita</div>
+                  <div style={{ fontSize: 12, color: t.textSub, marginBottom: 4 }}>{tr('newGamePage.gameDateLabel')}</div>
                   <input
                     type="date"
                     style={{ ...inputStyle, width: 'auto', minWidth: 180 }}
@@ -702,7 +708,7 @@ export default function AdminPage() {
                   return (
                     <div style={{ marginBottom: 12 }}>
                       <div style={{ fontSize: 12, color: t.textSub, marginBottom: 6 }}>
-                        Ordine di uscita (opzionale) — clicca dal primo eliminato all'ultimo
+                        {tr('adminPage.eliminationOrderAdminHint')}
                       </div>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {losers.map((slot, index) => {
@@ -729,7 +735,7 @@ export default function AdminPage() {
                                 display: 'flex', alignItems: 'center', gap: 6,
                               }}
                             >
-                              {picked && <span style={{ fontWeight: 800 }}>{total - pos}°</span>}
+                              {picked && <span style={{ fontWeight: 800 }}>{ordinal(total - pos, locale)}</span>}
                               {user?.username} · {deck?.name}
                             </button>
                           )
@@ -737,8 +743,8 @@ export default function AdminPage() {
                       </div>
                       {gameForm.elimOrder.length > 0 && (
                         <div style={{ marginTop: 8, fontSize: 11, color: gameForm.elimOrder.length === losers.length ? t.win : t.textMuted }}>
-                          {gameForm.elimOrder.length === losers.length ? '✓ Classifica completa' : `${gameForm.elimOrder.length}/${losers.length} ordinati`}
-                          <button type="button" onClick={() => setGameForm((c) => ({ ...c, elimOrder: [] }))} style={{ marginLeft: 10, fontSize: 11, color: t.primary, background: 'none', border: 'none', cursor: 'pointer' }}>✕ azzera</button>
+                          {gameForm.elimOrder.length === losers.length ? tr('newGamePage.rankingComplete') : tr('newGamePage.orderedCount', { done: gameForm.elimOrder.length, total: losers.length })}
+                          <button type="button" onClick={() => setGameForm((c) => ({ ...c, elimOrder: [] }))} style={{ marginLeft: 10, fontSize: 11, color: t.primary, background: 'none', border: 'none', cursor: 'pointer' }}>{tr('adminPage.resetShort')}</button>
                         </div>
                       )}
                     </div>
@@ -751,7 +757,7 @@ export default function AdminPage() {
                   if (losers.length < 1) return null
                   return (
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontSize: 12, color: t.textSub, marginBottom: 6 }}>Eliminazioni (opzionale) — chi ha eliminato chi</div>
+                      <div style={{ fontSize: 12, color: t.textSub, marginBottom: 6 }}>{tr('adminPage.eliminationsAdminHint')}</div>
                       {losers.map((slot, index) => {
                         const key = `${slot.userId}-${slot.deckId}`
                         const user = usersById.get(Number.parseInt(slot.userId, 10))
@@ -759,13 +765,13 @@ export default function AdminPage() {
                         return (
                           <div key={`${key}-${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                             <span style={{ fontSize: 13, color: t.text, minWidth: 150 }}>{user?.username} · {deck?.name}</span>
-                            <span style={{ fontSize: 12, color: t.textMuted }}>eliminato da</span>
+                            <span style={{ fontSize: 12, color: t.textMuted }}>{tr('newGamePage.eliminatedBy')}</span>
                             <select
                               style={{ ...inputStyle, width: 'auto', minWidth: 140 }}
                               value={gameForm.elimBy[key] || ''}
                               onChange={(event) => setGameForm((current) => ({ ...current, elimBy: { ...current.elimBy, [key]: event.target.value } }))}
                             >
-                              <option value="">— sconosciuto</option>
+                              <option value="">{tr('newGamePage.unknownEliminator')}</option>
                               {gameCandidates.filter((o) => `${o.userId}-${o.deckId}` !== key).map((o, oi) => {
                                 const ou = usersById.get(Number.parseInt(o.userId, 10))
                                 return <option key={oi} value={o.userId}>{ou?.username}</option>
@@ -780,14 +786,14 @@ export default function AdminPage() {
 
                 <input
                   style={{ ...inputStyle, marginBottom: 12 }}
-                  placeholder="Note"
+                  placeholder={tr('adminPage.notesPlaceholderPlain')}
                   value={gameForm.notes}
                   onChange={(event) => setGameForm((current) => ({ ...current, notes: event.target.value }))}
                 />
 
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="submit" style={buttonPrimary} disabled={saving}>Salva partita</button>
-                  <button type="button" style={buttonSecondary} onClick={() => setGameForm(EMPTY_GAME_FORM)}>Chiudi modifica</button>
+                  <button type="submit" style={buttonPrimary} disabled={saving}>{tr('newGamePage.saveGame')}</button>
+                  <button type="button" style={buttonSecondary} onClick={() => setGameForm(EMPTY_GAME_FORM)}>{tr('adminPage.closeEdit')}</button>
                 </div>
               </form>
             </SectionCard>
@@ -799,9 +805,9 @@ export default function AdminPage() {
               <SectionCard key={game.id} t={t}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                   <div>
-                    <div style={{ fontWeight: 600, color: t.text }}>Partita #{game.id}</div>
+                    <div style={{ fontWeight: 600, color: t.text }}>{tr('adminPage.gameNumberLabel', { id: game.id })}</div>
                     <div style={{ fontSize: 12, color: t.textSub }}>
-                      Creata da {game.createdBy?.username || 'sconosciuto'} · {winner ? `${winner.user.username} vince con ${winner.deck.name}` : 'Nessun vincitore'}
+                      {tr('adminPage.createdByLine', { username: game.createdBy?.username || tr('adminPage.unknownCreator') })} {winner ? tr('adminPage.winnerLine', { username: winner.user.username, deck: winner.deck.name }) : tr('adminPage.noWinner')}
                     </div>
                     <div style={{ fontSize: 12, color: t.textSub, marginTop: 4 }}>
                       {game.players.map((player) => `${player.user.username} · ${player.deck.name}`).join(' | ')}
@@ -809,8 +815,8 @@ export default function AdminPage() {
                     {game.notes && <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>{game.notes}</div>}
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button style={buttonSecondary} onClick={() => startGameEdit(game)}>Modifica</button>
-                    <button style={buttonDanger} onClick={() => removeGame(game.id)}>Elimina</button>
+                    <button style={buttonSecondary} onClick={() => startGameEdit(game)}>{tr('common.edit')}</button>
+                    <button style={buttonDanger} onClick={() => removeGame(game.id)}>{tr('common.delete')}</button>
                   </div>
                 </div>
               </SectionCard>
