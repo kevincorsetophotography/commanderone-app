@@ -1,25 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { timeAgo } from '../lib/timeAgo'
 
 const POLL_MS = 60000
 
-function timeAgo(iso) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const m = Math.floor(diff / 60000)
-  if (m < 1) return 'ora'
-  if (m < 60) return `${m}m fa`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h fa`
-  const d = Math.floor(h / 24)
-  if (d < 7) return `${d}g fa`
-  return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })
-}
-
 export default function NotificationBell() {
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const dateLocale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   const [count, setCount] = useState(0)
@@ -62,8 +54,8 @@ export default function NotificationBell() {
     <div style={{ position: 'relative' }}>
       <button
         onClick={toggle}
-        title="Notifiche"
-        aria-label={count > 0 ? `Notifiche, ${count} non lette` : 'Notifiche'}
+        title={tr('notifications.title')}
+        aria-label={count > 0 ? tr('notifications.ariaUnread', { count }) : tr('notifications.title')}
         style={{
           position: 'relative', padding: '6px 12px', borderRadius: 10, cursor: 'pointer',
           border: `1px solid ${t.border}`, background: t.bgSurfaceAlt, color: t.textSub,
@@ -100,14 +92,14 @@ export default function NotificationBell() {
             boxShadow: t.shadow, padding: 4,
           }}>
             <div style={{ padding: '8px 10px', fontSize: 12, fontWeight: 700, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Notifiche
+              {tr('notifications.title')}
             </div>
 
-            {loading && <div style={{ padding: '10px', fontSize: 13, color: t.textSub }}>Caricamento…</div>}
+            {loading && <div style={{ padding: '10px', fontSize: 13, color: t.textSub }}>{tr('notifications.loading')}</div>}
 
             {!loading && items.length === 0 && (
               <div style={{ padding: '18px 12px', fontSize: 13, color: t.textMuted, textAlign: 'center' }}>
-                Nessuna notifica
+                {tr('notifications.empty')}
               </div>
             )}
 
@@ -125,7 +117,7 @@ export default function NotificationBell() {
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: t.text, wordBreak: 'break-word' }}>{n.title}</div>
                   {n.body && <div style={{ fontSize: 12, color: t.textSub, marginTop: 2, wordBreak: 'break-word' }}>{n.body}</div>}
-                  <div style={{ fontSize: 11, color: t.textMuted, marginTop: 3 }}>{timeAgo(n.createdAt)}</div>
+                  <div style={{ fontSize: 11, color: t.textMuted, marginTop: 3 }}>{timeAgo(n.createdAt, tr, dateLocale)}</div>
                 </div>
               </div>
             ))}

@@ -1,15 +1,16 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { parseDecklist, validateAndFetchDecklist, fetchCommanderCard, fetchCommanderColors } from '../lib/scryfall'
 import { resolveDecklistCards } from '../lib/cardCache'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import CommanderInput from './CommanderInput'
 
-const COLOR_MAP   = { W: '#f5f0e0', U: '#b8d4e8', B: '#c8b8d8', R: '#e8c0b0', G: '#b8d8b8' }
-const COLOR_LABEL = { W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde' }
+const COLOR_MAP = { W: '#f5f0e0', U: '#b8d4e8', B: '#c8b8d8', R: '#e8c0b0', G: '#b8d8b8' }
 
 export default function DeckListPanel({ decklist, commander, name, onSave }) {
   const { t } = useTheme()
+  const { t: tr } = useTranslation()
   const [open, setOpen]                     = useState(false)
   const [mode, setMode]                     = useState('view')
   const [nameInput, setNameInput]           = useState(name || '')
@@ -95,13 +96,13 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
     setErrors([])
 
     if (!nameInput.trim()) {
-      setErrors(['Il nome del mazzo è obbligatorio'])
+      setErrors([tr('deckList.nameRequired')])
       setSaving(false)
       return
     }
 
     if (!commanderInput.trim()) {
-      setErrors(['Inserisci il nome del commander'])
+      setErrors([tr('deckList.commanderRequired')])
       setSaving(false)
       return
     }
@@ -110,7 +111,7 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
       // 1. Valida il commander su Scryfall → ottieni nome esatto
       const commanderCard = await fetchCommanderCard(commanderInput.trim())
       if (!commanderCard) {
-        setErrors([`Commander non trovato su Scryfall: "${commanderInput.trim()}"`])
+        setErrors([tr('deckList.commanderNotFound', { name: commanderInput.trim() })])
         return
       }
 
@@ -132,7 +133,7 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
       setDetectedColors(null)
       setMode('view')
     } catch (e) {
-      setErrors([e?.error || 'Errore nel salvataggio'])
+      setErrors([e?.error || tr('deckList.saveError')])
     } finally {
       setSaving(false)
     }
@@ -155,7 +156,7 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
       setDetectedColors(null)
       setImportUrl('')
     } catch (e) {
-      setErrors([e?.error || 'Errore durante l\'import'])
+      setErrors([e?.error || tr('deckList.importError')])
     } finally {
       setImporting(false)
     }
@@ -170,7 +171,7 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
         style={{ ...btnSecondary, color: hasList ? t.primary : t.textSub, borderColor: hasList ? t.primaryBorder : t.border }}
         onClick={() => open ? setOpen(false) : openPanel()}
       >
-        {open ? 'Chiudi' : hasList ? 'Lista ✓' : 'Lista'}
+        {open ? tr('deckList.close') : hasList ? tr('deckList.listSaved') : tr('deckList.list')}
       </button>
 
       {open && (
@@ -180,12 +181,12 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
           {mode === 'view' && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div style={{ fontSize: 13, color: t.textSub }}>{totalCount} carte</div>
-                <button style={btnSecondary} onClick={enterEditMode}>Modifica mazzo</button>
+                <div style={{ fontSize: 13, color: t.textSub }}>{tr('deckList.cardCount', { count: totalCount })}</div>
+                <button style={btnSecondary} onClick={enterEditMode}>{tr('deckList.editDeck')}</button>
               </div>
 
               {loadingCards ? (
-                <div style={{ fontSize: 13, color: t.textSub, padding: '0.5rem 0' }}>Caricamento carte...</div>
+                <div style={{ fontSize: 13, color: t.textSub, padding: '0.5rem 0' }}>{tr('deckList.loadingCards')}</div>
               ) : (
                 <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 220, maxHeight: 480, overflowY: 'auto', borderRadius: 8, border: `0.5px solid ${t.border}`, background: t.bgSurface }}>
@@ -216,7 +217,7 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
                         : <div style={{ width: 200, height: 279, background: t.bgMuted, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: t.textSub, textAlign: 'center', padding: 12 }}>{selectedCard.name}</div>
                     ) : (
                       <div style={{ width: 200, height: 279, border: `2px dashed ${t.border}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: t.textMuted, textAlign: 'center', padding: 12 }}>
-                        Clicca su una carta per vedere l'immagine
+                        {tr('deckList.clickCardHint')}
                       </div>
                     )}
                   </div>
@@ -230,27 +231,27 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
             <>
               {/* Nome mazzo */}
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, color: t.textSub, marginBottom: 4, fontWeight: 500 }}>Nome mazzo</div>
+                <div style={{ fontSize: 12, color: t.textSub, marginBottom: 4, fontWeight: 500 }}>{tr('deckList.deckName')}</div>
                 <input
                   value={nameInput}
                   onChange={e => setNameInput(e.target.value)}
-                  placeholder="Nome mazzo"
+                  placeholder={tr('deckList.deckName')}
                   style={inputSt}
                 />
               </div>
 
               {/* Import da URL */}
               <div style={{ marginBottom: 12, padding: '10px 12px', background: t.bgMuted, borderRadius: 10, border: `1px solid ${t.border}` }}>
-                <div style={{ fontSize: 12, color: t.textSub, marginBottom: 6, fontWeight: 500 }}>Importa da Archidekt o Moxfield</div>
+                <div style={{ fontSize: 12, color: t.textSub, marginBottom: 6, fontWeight: 500 }}>{tr('deckList.importSectionTitle')}</div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input
                     value={importUrl}
                     onChange={e => setImportUrl(e.target.value)}
-                    placeholder="https://archidekt.com/decks/... oppure moxfield.com/decks/..."
+                    placeholder={tr('deckList.importPlaceholder')}
                     style={{ ...inputSt, flex: 1 }}
                   />
                   <button type="button" style={{ ...btnPrimary, padding: '8px 16px', whiteSpace: 'nowrap' }} onClick={doImport} disabled={importing}>
-                    {importing ? 'Import...' : 'Importa'}
+                    {importing ? tr('deckList.importing') : tr('deckList.import')}
                   </button>
                 </div>
               </div>
@@ -258,14 +259,14 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
               {/* Campo commander */}
               <div style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, color: t.textSub, fontWeight: 500 }}>Commander</span>
+                  <span style={{ fontSize: 12, color: t.textSub, fontWeight: 500 }}>{tr('deckList.commander')}</span>
                   {detectingColors && (
-                    <span style={{ fontSize: 11, color: t.primary }}>rilevamento colori...</span>
+                    <span style={{ fontSize: 11, color: t.primary }}>{tr('deckList.detectingColors')}</span>
                   )}
                   {!detectingColors && detectedColors !== null && (
                     <span style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
                       {detectedColors.length === 0
-                        ? <span style={{ fontSize: 11, color: t.textMuted }}>Incolore</span>
+                        ? <span style={{ fontSize: 11, color: t.textMuted }}>{tr('deckList.colorless')}</span>
                         : detectedColors.map(c => (
                             <span key={c} title={c} style={{
                               display: 'inline-block', width: 14, height: 14, borderRadius: '50%',
@@ -281,7 +282,7 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
                   value={commanderInput}
                   onChange={(name) => { setCommanderInput(name); setDetectedColors(null) }}
                   onBlur={handleCommanderBlur}
-                  placeholder="es. Atraxa, Praetors' Voice"
+                  placeholder={tr('deckList.commanderPlaceholder')}
                   style={inputSt}
                 />
               </div>
@@ -289,7 +290,7 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
               {/* 99 carte rimanenti */}
               <div style={{ marginBottom: 8 }}>
                 <div style={{ fontSize: 12, color: t.textSub, marginBottom: 4 }}>
-                  99 carte rimanenti · formato "1 Nome Carta"
+                  {tr('deckList.remainingCards')}
                 </div>
                 <textarea
                   value={editText}
@@ -308,9 +309,9 @@ export default function DeckListPanel({ decklist, commander, name, onSave }) {
 
               <div style={{ display: 'flex', gap: 8 }}>
                 <button style={btnPrimary} onClick={save} disabled={saving}>
-                  {saving ? 'Validazione in corso...' : 'Salva lista'}
+                  {saving ? tr('deckList.validating') : tr('deckList.saveList')}
                 </button>
-                <button style={btnSecondary} onClick={cancel}>Annulla</button>
+                <button style={btnSecondary} onClick={cancel}>{tr('deckList.cancel')}</button>
               </div>
             </>
           )}
