@@ -96,8 +96,16 @@ gratuito se il tetto giornaliero è esaurito o Groq non risponde)
 ### Prossimi
 - Wiring UI della paginazione partite (vedi sopra) — solo se/quando lo storico di un gruppo reale inizia a diventare pesante da caricare tutto insieme.
 
-### i18n Fase 2 — il resto dell'app
-Restano da convertire ~35 file frontend (Feed, Gioca, Eventi, Gruppo, Mazzi, Judge, Admin, Guida, ...) e i ~150 messaggi d'errore nei 14 file backend rimasti, seguendo lo stesso pattern della Fase 1 (codici errore dal backend, `t`→`tr` per non fare ombra al tema, `locales/it.json`/`en.json`). Nessuna nuova libreria da installare, solo applicare il pattern già stabilito schermata per schermata. Va prima di ads/Capacitor, non dopo — è la porta d'ingresso per qualunque mercato non italiano.
+### i18n Fase 2 — il resto dell'app (in corso)
+Stesso pattern della Fase 1 (codici errore dal backend, `t`→`tr` per non fare ombra al tema, `locales/it.json`/`en.json`), applicato schermata per schermata. Nessuna nuova libreria da installare. Va prima di ads/Capacitor, non dopo — è la porta d'ingresso per qualunque mercato non italiano.
+
+**Già convertiti** (oltre alla Fase 1): componenti condivisi `NotificationBell`/`GameSocial`/`DeckListPanel`, `FeedPage` (la pagina più vista), `VerifyEmailPage`/`ResetPasswordPage` (flusso auth rimasto fuori dalla Fase 1 per errore), `GamePage`, `GiocaPage`.
+
+Estrazioni di supporto nate durante la conversione: `lib/timeAgo.js` (tempo relativo minuti/ore/giorni, era duplicato in 2 componenti), `lib/ordinal.js` (piazzamento "1°" it / "1st" en — pattern `${n}°` ancora duplicato in ~9 file non convertiti: Dashboard, Gruppo, Admin, PlayerProfile, DeckProfile, NewGame, EventDetail, SeasonRecap — da consolidare quando tocca a quei file). Namespace `common` avviato con `common.back` ("← Indietro"/"← Back", duplicato in altri 5 file: DeckProfilePage, GuidaPage, PlayerProfilePage, PrivacyPage, TermsPage).
+
+**Nota strutturale aperta**: `lib/seasons.js` (`LABELS` stagioni, "Gennaio–Aprile" ecc.) e `lib/brackets.js` (label bracket "Casual"/"Bilanciato"/"Potente"/"cEDH") sono costanti hardcoded in italiano usate da più pagine — non sono componenti, quindi vanno ristrutturate per tradurre a render-time invece di avere la stringa già tradotta nella costante. Non ancora affrontato. `lib/archetypes.js` invece va probabilmente lasciato in inglese: sono termini di gergo Magic (Aggro, Control, Combo, Stax...) usati così a livello internazionale.
+
+**Restano da convertire**: frontend — `App.jsx`, `SupportBanner.jsx`, `useFeedback.jsx`/`useGroup.jsx`/`useTheme.jsx`, `AdminPage`, `Dashboard`/`DashboardPage`, `DeckProfilePage`, `DecksPage`, `EventDetailPage`, `EventsPage`, `GruppoPage`, `JudgePage`, `NewGamePage`, `PlayerProfilePage`, `SeasonRecap`. Backend — i ~150 messaggi d'errore nei 13 file non ancora migrati (`middleware/*`, `routes/{admin,decks,events,gamesV2,groups,judge,notifications,scryfall,stats}.js`, `app.js`). Esplicitamente escluso da questa fase (task di traduzione contenuti, non di stringhe UI): `PrivacyPage`/`TermsPage`/`GuidaPage`/`MarkdownDoc.jsx`, cioè il contenuto di `PRIVACY_POLICY.md`/`TERMINI_SERVIZIO.md`/`GUIDA_UTENTE.md`.
 
 ### Crescita
 - Link di invito condivisibile con preview + QR invece del solo codice a mano — `qrcode` è già una dipendenza frontend, usata solo in `SeasonRecap.jsx`, non per gli inviti.
