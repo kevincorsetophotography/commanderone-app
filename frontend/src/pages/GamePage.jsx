@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { Skeleton } from '../components/Skeleton'
@@ -7,12 +8,15 @@ import EmptyState from '../components/EmptyState'
 import DeckThumb from '../components/DeckThumb'
 import GameSocial from '../components/GameSocial'
 import PlayerAvatar from '../components/PlayerAvatar'
+import { ordinal } from '../lib/ordinal'
 
 export default function GamePage() {
   const { id } = useParams()
   const gid = Number.parseInt(id, 10)
   const navigate = useNavigate()
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
 
   const [game, setGame] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -23,30 +27,30 @@ export default function GamePage() {
     setLoading(true); setError('')
     api.getGame(gid)
       .then(g => { if (alive) setGame(g) })
-      .catch(err => { if (alive) setError(err.error || 'Partita non trovata') })
+      .catch(err => { if (alive) setError(err.error || tr('gamePage.notFound')) })
       .finally(() => { if (alive) setLoading(false) })
     return () => { alive = false }
   }, [gid])
 
   const back = (
-    <button onClick={() => navigate(-1)} style={{ padding: '6px 14px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.bgMuted, color: t.textSub, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>← Indietro</button>
+    <button onClick={() => navigate(-1)} style={{ padding: '6px 14px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.bgMuted, color: t.textSub, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>{tr('common.back')}</button>
   )
 
   if (loading) return (<div>{back}<Skeleton h={200} r={16} /></div>)
-  if (error || !game) return (<div>{back}<EmptyState icon="🔍" title="Partita non trovata" message={error || 'Questa partita non esiste.'} /></div>)
+  if (error || !game) return (<div>{back}<EmptyState icon="🔍" title={tr('gamePage.notFound')} message={error || tr('gamePage.notFoundMessage')} /></div>)
 
   const card = {
     background: t.bgSurface, border: `1px solid ${t.border}`, borderRadius: 16,
     padding: '1.15rem 1.35rem', marginBottom: 14, boxShadow: t.shadow,
   }
 
-  const date = new Date(game.playedAt).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const date = new Date(game.playedAt).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const winner = game.players.find(p => p.isWinner)
   const ranked = game.players.every(p => p.placement != null)
   const ordered = ranked ? [...game.players].sort((a, b) => a.placement - b.placement) : game.players
   const kills = game.players.filter(p => p.eliminatedById)
 
-  const medal = (placement) => placement === 1 ? '🥇' : placement === 2 ? '🥈' : placement === 3 ? '🥉' : `${placement}°`
+  const medal = (placement) => placement === 1 ? '🥇' : placement === 2 ? '🥈' : placement === 3 ? '🥉' : ordinal(placement, locale)
 
   return (
     <div>
@@ -56,7 +60,7 @@ export default function GamePage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
           <div>
             <div style={{ fontSize: 18, fontWeight: 700, color: t.text, textTransform: 'capitalize' }}>{date}</div>
-            <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>{game.players.length} giocatori{game.createdBy ? ` · registrata da ${game.createdBy.username}` : ''}</div>
+            <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>{tr('gamePage.playersCount', { count: game.players.length })}{game.createdBy ? tr('gamePage.loggedBy', { username: game.createdBy.username }) : ''}</div>
           </div>
           {winner && (
             <span style={{ fontSize: 13, background: t.winBg, color: t.win, padding: '5px 12px', borderRadius: 20, fontWeight: 600 }}>
@@ -98,7 +102,7 @@ export default function GamePage() {
         {/* Eliminazioni */}
         {kills.length > 0 && (
           <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 11, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, marginBottom: 8 }}>Eliminazioni</div>
+            <div style={{ fontSize: 11, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, marginBottom: 8 }}>{tr('gamePage.eliminations')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {kills.map(p => {
                 const killer = game.players.find(x => x.user.id === p.eliminatedById)

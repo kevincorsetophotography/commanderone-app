@@ -24,7 +24,28 @@
       "termsLink": "Terms of Service",
       "privacyLink": "Privacy Policy"
     },
-    "fanContentDisclaimer": "CommanderOne is unofficial Fan Content, permitted under the Fan Content Policy of Wizards of the Coast. Not approved/endorsed by Wizards."
+    "fanContentDisclaimer": "CommanderOne is unofficial Fan Content, permitted under the Fan Content Policy of Wizards of the Coast. Not approved/endorsed by Wizards.",
+    "verify": {
+      "missingToken": "Incomplete link: token is missing.",
+      "working": "Verifying…",
+      "successTitle": "Email verified!",
+      "successBody": "Your address is confirmed. You can now use password recovery if you need it.",
+      "goToApp": "Go to the app",
+      "errorTitle": "Verification failed",
+      "retryLink": "Request a new verification email from the Account page →"
+    },
+    "reset": {
+      "mismatch": "Passwords don't match",
+      "newPasswordTitle": "New password",
+      "requestTitle": "Recover password",
+      "newPasswordSubtitle": "Choose a new password for your account.",
+      "requestSubtitle": "Enter your email: we'll send you a link to reset your password.",
+      "sentMessage": "📬 If that address is linked to an account, you'll receive a reset email within a few minutes. Check your spam folder too.",
+      "newPasswordPlaceholder": "New password (min 8 characters)",
+      "submitNew": "Set password",
+      "submitRequest": "Send reset link",
+      "backToLogin": "← Back to login"
+    }
   },
   "onboarding": {
     "welcome": "Welcome!",
@@ -94,6 +115,119 @@
     "language": {
       "label": "Language"
     }
+  },
+  "common": {
+    "back": "← Back"
+  },
+  "gioca": {
+    "logGame": "Log Game",
+    "logGameSubtitle": "Add the result of a game you just finished",
+    "judgeBotSubtitle": "Ruling Commander · Comprehensive Rules + Scryfall",
+    "recentDecks": "Recently used decks",
+    "lastGame": "Last game",
+    "tomorrow": "Tomorrow",
+    "inDays": "in {{count}} days"
+  },
+  "gamePage": {
+    "notFound": "Game not found",
+    "notFoundMessage": "This game doesn't exist.",
+    "playersCount_one": "{{count}} player",
+    "playersCount_other": "{{count}} players",
+    "loggedBy": " · logged by {{username}}",
+    "eliminations": "Eliminations"
+  },
+  "time": {
+    "now": "now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "ariaUnread": "Notifications, {{count}} unread",
+    "loading": "Loading…",
+    "empty": "No notifications"
+  },
+  "gameSocial": {
+    "loadCommentsError": "Error loading comments",
+    "reactionError": "Error reacting",
+    "sendCommentError": "Error sending comment",
+    "deleteError": "Error deleting",
+    "confirmDeleteTitle": "Delete comment?",
+    "confirmDeleteMessage": "The comment will be permanently removed.",
+    "confirmDeleteConfirm": "Delete",
+    "react": "React",
+    "comment_one": "{{count}} comment",
+    "comment_other": "{{count}} comments",
+    "commentCta": "Comment",
+    "loadingComments": "Loading comments…",
+    "noComments": "No comments yet. Be the first!",
+    "deleteCommentTitle": "Delete comment",
+    "placeholder": "Write a comment…",
+    "send": "Send"
+  },
+  "deckList": {
+    "close": "Close",
+    "listSaved": "List ✓",
+    "list": "List",
+    "editDeck": "Edit deck",
+    "loadingCards": "Loading cards...",
+    "cardCount_one": "{{count}} card",
+    "cardCount_other": "{{count}} cards",
+    "clickCardHint": "Click a card to see its image",
+    "deckName": "Deck name",
+    "importSectionTitle": "Import from Archidekt or Moxfield",
+    "importPlaceholder": "https://archidekt.com/decks/... or moxfield.com/decks/...",
+    "importing": "Importing...",
+    "import": "Import",
+    "commander": "Commander",
+    "detectingColors": "detecting colors...",
+    "colorless": "Colorless",
+    "commanderPlaceholder": "e.g. Atraxa, Praetors' Voice",
+    "remainingCards": "99 remaining cards · format \"1 Card Name\"",
+    "validating": "Validating...",
+    "saveList": "Save list",
+    "cancel": "Cancel",
+    "nameRequired": "Deck name is required",
+    "commanderRequired": "Enter the commander's name",
+    "commanderNotFound": "Commander not found on Scryfall: \"{{name}}\"",
+    "saveError": "Error saving",
+    "importError": "Error during import"
+  },
+  "feed": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": "{{count}}d ago",
+    "greeting": "Hi, {{username}}",
+    "pointsPrefix": "{{points}} pts · ",
+    "winsCount_one": "{{count}} win out of {{total}}",
+    "winsCount_other": "{{count}} wins out of {{total}}",
+    "streak": "Streak {{count}}",
+    "noGamesThisSeason": "No games yet this season.",
+    "nextEvent": "Next event",
+    "rsvpCount_one": "{{count}} RSVP",
+    "rsvpCount_other": "{{count}} RSVPs",
+    "currentSeason": "Current season",
+    "viewStandings": "View standings ›",
+    "points": "pts",
+    "deckSpotlight": "Deck Spotlight",
+    "last10Days": "last 10 days",
+    "spotlightStats_one": "by {{owner}} · {{count}} game (last 10 days)",
+    "spotlightStats_other": "by {{owner}} · {{count}} games (last 10 days)",
+    "winRate": "win rate",
+    "week": "Week",
+    "weekGamesLabel_one": "game",
+    "weekGamesLabel_other": "games",
+    "trendUp": "↑ +{{diff}} vs last week",
+    "trendDown": "↓ {{diff}} vs last week",
+    "trendSame": "→ same as last week",
+    "weekYesterday": "yesterday",
+    "weekToday": "today",
+    "wonGame": "You won!",
+    "wonSuffix": " won",
+    "withOthers": "With {{others}}",
+    "recentActivity": "Recent activity",
+    "emptyFeed": "No activity yet. Log your first game!"
   },
   "errors": {
     "USERNAME_REQUIRED": "Username required",

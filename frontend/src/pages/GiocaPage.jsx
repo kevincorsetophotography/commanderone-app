@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../hooks/useAuth'
 import DeckThumb from '../components/DeckThumb'
 
-function relativeDate(date) {
+function relativeDate(date, tr, locale) {
   const diffDays = Math.floor((Date.now() - new Date(date)) / 86400000)
-  if (diffDays === 0) return 'Oggi'
-  if (diffDays === 1) return 'Ieri'
-  if (diffDays < 7) return `${diffDays} gg fa`
-  return new Date(date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })
+  if (diffDays === 0) return tr('feed.today')
+  if (diffDays === 1) return tr('feed.yesterday')
+  if (diffDays < 7) return tr('feed.daysAgo', { count: diffDays })
+  return new Date(date).toLocaleDateString(locale, { day: 'numeric', month: 'short' })
 }
 
 export default function GiocaPage() {
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const { user } = useAuth()
   const navigate = useNavigate()
   const [games, setGames] = useState([])
@@ -60,9 +63,9 @@ export default function GiocaPage() {
 
   const eventCountdown = (startsAt) => {
     const diff = Math.ceil((new Date(startsAt) - Date.now()) / 86400000)
-    if (diff <= 0) return 'Oggi'
-    if (diff === 1) return 'Domani'
-    return `tra ${diff} giorni`
+    if (diff <= 0) return tr('feed.today')
+    if (diff === 1) return tr('gioca.tomorrow')
+    return tr('gioca.inDays', { count: diff })
   }
 
   return (
@@ -84,8 +87,8 @@ export default function GiocaPage() {
         onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
       >
         <div>
-          <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Registra Partita</div>
-          <div style={{ fontSize: 13, opacity: 0.85 }}>Aggiungi il risultato di una partita appena finita</div>
+          <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>{tr('gioca.logGame')}</div>
+          <div style={{ fontSize: 13, opacity: 0.85 }}>{tr('gioca.logGameSubtitle')}</div>
         </div>
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.9, flexShrink: 0 }}>
           <circle cx="12" cy="12" r="10"/>
@@ -113,7 +116,7 @@ export default function GiocaPage() {
           <span style={{ fontSize: 24, lineHeight: 1 }}>⚖</span>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700 }}>Judge Bot</div>
-            <div style={{ fontSize: 12, color: t.textSub }}>Ruling Commander · Comprehensive Rules + Scryfall</div>
+            <div style={{ fontSize: 12, color: t.textSub }}>{tr('gioca.judgeBotSubtitle')}</div>
           </div>
         </div>
         <span style={{ color: t.primary, fontSize: 20, fontWeight: 700, flexShrink: 0 }}>›</span>
@@ -123,7 +126,7 @@ export default function GiocaPage() {
       {recentDecks.length > 0 && (
         <div className="ct-fade-up" style={{ marginBottom: 24, animationDelay: '120ms' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-            Ultimi mazzi usati
+            {tr('gioca.recentDecks')}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             {recentDecks.map(deck => (
@@ -160,7 +163,7 @@ export default function GiocaPage() {
       {nextEvent && (
         <div className="ct-fade-up" style={{ marginTop: 24, animationDelay: '180ms' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-            Prossimo evento
+            {tr('feed.nextEvent')}
           </div>
           <button
             onClick={() => navigate(`/evento/${nextEvent.id}`)}
@@ -176,8 +179,8 @@ export default function GiocaPage() {
                 {nextEvent.title}
               </div>
               <div style={{ fontSize: 11, color: t.textSub, marginTop: 3 }}>
-                {new Date(nextEvent.startsAt).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long' })}
-                {nextEvent.rsvps?.length > 0 ? ` · ${nextEvent.rsvps.length} iscritti` : ''}
+                {new Date(nextEvent.startsAt).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'long' })}
+                {nextEvent.rsvps?.length > 0 ? ` · ${tr('feed.rsvpCount', { count: nextEvent.rsvps.length })}` : ''}
               </div>
             </div>
             <span style={{ fontSize: 11, fontWeight: 700, color: t.primary, flexShrink: 0,
@@ -197,7 +200,7 @@ export default function GiocaPage() {
         return (
           <div className="ct-fade-up" style={{ marginTop: 24, animationDelay: '240ms' }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-              Ultima partita
+              {tr('gioca.lastGame')}
             </div>
             <button
               onClick={() => navigate('/partita/' + lastGame.id)}
@@ -215,7 +218,7 @@ export default function GiocaPage() {
                   🏆 {winner?.user?.username}{winner?.deck?.commander ? ` · ${winner.deck.commander.split('//')[0].trim()}` : winner?.deck?.name ? ` · ${winner.deck.name}` : ''}
                 </div>
                 <div style={{ fontSize: 11, color: t.textSub, marginTop: 2 }}>
-                  {lastGame.players.length} giocatori · {relativeDate(lastGame.playedAt)}
+                  {tr('gamePage.playersCount', { count: lastGame.players.length })} · {relativeDate(lastGame.playedAt, tr, locale)}
                 </div>
               </div>
               <span style={{ color: t.primary, fontSize: 18, flexShrink: 0 }}>›</span>

@@ -24,7 +24,28 @@
       "termsLink": "Termini di Servizio",
       "privacyLink": "Privacy Policy"
     },
-    "fanContentDisclaimer": "CommanderOne è Fan Content non ufficiale, permesso dalla Fan Content Policy di Wizards of the Coast. Non approvato/sostenuto da Wizards."
+    "fanContentDisclaimer": "CommanderOne è Fan Content non ufficiale, permesso dalla Fan Content Policy di Wizards of the Coast. Non approvato/sostenuto da Wizards.",
+    "verify": {
+      "missingToken": "Link incompleto: manca il token.",
+      "working": "Verifica in corso…",
+      "successTitle": "Email verificata!",
+      "successBody": "Il tuo indirizzo è confermato. Ora puoi usare il recupero password se ti servirà.",
+      "goToApp": "Vai all'app",
+      "errorTitle": "Verifica non riuscita",
+      "retryLink": "Richiedi una nuova email di verifica dalla pagina Account →"
+    },
+    "reset": {
+      "mismatch": "Le password non coincidono",
+      "newPasswordTitle": "Nuova password",
+      "requestTitle": "Recupera password",
+      "newPasswordSubtitle": "Scegli la nuova password per il tuo account.",
+      "requestSubtitle": "Inserisci la tua email: ti mandiamo un link per reimpostare la password.",
+      "sentMessage": "📬 Se l'indirizzo è associato a un account, riceverai un'email con il link di reset entro pochi minuti. Controlla anche lo spam.",
+      "newPasswordPlaceholder": "Nuova password (min 8 caratteri)",
+      "submitNew": "Imposta password",
+      "submitRequest": "Invia link di reset",
+      "backToLogin": "← Torna al login"
+    }
   },
   "onboarding": {
     "welcome": "Benvenuto!",
@@ -94,6 +115,119 @@
     "language": {
       "label": "Lingua"
     }
+  },
+  "common": {
+    "back": "← Indietro"
+  },
+  "gioca": {
+    "logGame": "Registra Partita",
+    "logGameSubtitle": "Aggiungi il risultato di una partita appena finita",
+    "judgeBotSubtitle": "Ruling Commander · Comprehensive Rules + Scryfall",
+    "recentDecks": "Ultimi mazzi usati",
+    "lastGame": "Ultima partita",
+    "tomorrow": "Domani",
+    "inDays": "tra {{count}} giorni"
+  },
+  "gamePage": {
+    "notFound": "Partita non trovata",
+    "notFoundMessage": "Questa partita non esiste.",
+    "playersCount_one": "{{count}} giocatore",
+    "playersCount_other": "{{count}} giocatori",
+    "loggedBy": " · registrata da {{username}}",
+    "eliminations": "Eliminazioni"
+  },
+  "time": {
+    "now": "ora",
+    "minutesAgo": "{{count}}m fa",
+    "hoursAgo": "{{count}}h fa",
+    "daysAgo": "{{count}}g fa"
+  },
+  "notifications": {
+    "title": "Notifiche",
+    "ariaUnread": "Notifiche, {{count}} non lette",
+    "loading": "Caricamento…",
+    "empty": "Nessuna notifica"
+  },
+  "gameSocial": {
+    "loadCommentsError": "Errore caricamento commenti",
+    "reactionError": "Errore reazione",
+    "sendCommentError": "Errore invio commento",
+    "deleteError": "Errore eliminazione",
+    "confirmDeleteTitle": "Eliminare il commento?",
+    "confirmDeleteMessage": "Il commento verrà rimosso definitivamente.",
+    "confirmDeleteConfirm": "Elimina",
+    "react": "Reagisci",
+    "comment_one": "{{count}} commento",
+    "comment_other": "{{count}} commenti",
+    "commentCta": "Commenta",
+    "loadingComments": "Caricamento commenti…",
+    "noComments": "Nessun commento. Scrivi il primo!",
+    "deleteCommentTitle": "Elimina commento",
+    "placeholder": "Scrivi un commento…",
+    "send": "Invia"
+  },
+  "deckList": {
+    "close": "Chiudi",
+    "listSaved": "Lista ✓",
+    "list": "Lista",
+    "editDeck": "Modifica mazzo",
+    "loadingCards": "Caricamento carte...",
+    "cardCount_one": "{{count}} carta",
+    "cardCount_other": "{{count}} carte",
+    "clickCardHint": "Clicca su una carta per vedere l'immagine",
+    "deckName": "Nome mazzo",
+    "importSectionTitle": "Importa da Archidekt o Moxfield",
+    "importPlaceholder": "https://archidekt.com/decks/... oppure moxfield.com/decks/...",
+    "importing": "Import...",
+    "import": "Importa",
+    "commander": "Commander",
+    "detectingColors": "rilevamento colori...",
+    "colorless": "Incolore",
+    "commanderPlaceholder": "es. Atraxa, Praetors' Voice",
+    "remainingCards": "99 carte rimanenti · formato \"1 Nome Carta\"",
+    "validating": "Validazione in corso...",
+    "saveList": "Salva lista",
+    "cancel": "Annulla",
+    "nameRequired": "Il nome del mazzo è obbligatorio",
+    "commanderRequired": "Inserisci il nome del commander",
+    "commanderNotFound": "Commander non trovato su Scryfall: \"{{name}}\"",
+    "saveError": "Errore nel salvataggio",
+    "importError": "Errore durante l'import"
+  },
+  "feed": {
+    "today": "Oggi",
+    "yesterday": "Ieri",
+    "daysAgo": "{{count}} gg fa",
+    "greeting": "Ciao, {{username}}",
+    "pointsPrefix": "{{points}} pt · ",
+    "winsCount_one": "{{count}} vittoria su {{total}}",
+    "winsCount_other": "{{count}} vittorie su {{total}}",
+    "streak": "Streak {{count}}",
+    "noGamesThisSeason": "Ancora nessuna partita questa stagione.",
+    "nextEvent": "Prossimo evento",
+    "rsvpCount_one": "{{count}} iscritto",
+    "rsvpCount_other": "{{count}} iscritti",
+    "currentSeason": "Stagione corrente",
+    "viewStandings": "Vedi classifica ›",
+    "points": "pt",
+    "deckSpotlight": "Deck Spotlight",
+    "last10Days": "ultimi 10 giorni",
+    "spotlightStats_one": "di {{owner}} · {{count}} partita (10 gg)",
+    "spotlightStats_other": "di {{owner}} · {{count}} partite (10 gg)",
+    "winRate": "win rate",
+    "week": "Settimana",
+    "weekGamesLabel_one": "partita",
+    "weekGamesLabel_other": "partite",
+    "trendUp": "↑ +{{diff}} vs scorsa",
+    "trendDown": "↓ {{diff}} vs scorsa",
+    "trendSame": "→ come la scorsa",
+    "weekYesterday": "ieri",
+    "weekToday": "oggi",
+    "wonGame": "Hai vinto!",
+    "wonSuffix": " ha vinto",
+    "withOthers": "Con {{others}}",
+    "recentActivity": "Attività recente",
+    "emptyFeed": "Ancora nessuna attività. Registra la prima partita!"
   },
   "errors": {
     "USERNAME_REQUIRED": "Username richiesto",
