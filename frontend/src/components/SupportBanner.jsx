@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTheme } from '../hooks/useTheme'
 import { KOFI_URL } from '../lib/links'
 
@@ -20,6 +21,7 @@ function shouldShow() {
 // né un popup: si chiude e resta chiusa per un mese, mai più di così.
 export default function SupportBanner() {
   const { t } = useTheme()
+  const { t: tr } = useTranslation()
   const [dismissed, setDismissed] = useState(() => !shouldShow())
 
   if (dismissed) return null
@@ -37,21 +39,21 @@ export default function SupportBanner() {
     }}>
       <span style={{ fontSize: 22, flexShrink: 0 }}>☕</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 700, color: t.text }}>Ti piace CommanderOne?</div>
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: t.text }}>{tr('supportBanner.title')}</div>
         <div style={{ fontSize: 12.5, color: t.textSub, marginTop: 1 }}>
-          È gratis e lo resta — se vuoi, una donazione libera aiuta a tenerlo vivo.
+          {tr('supportBanner.body')}
         </div>
       </div>
       <a href={KOFI_URL} target="_blank" rel="noopener noreferrer" style={{
         flexShrink: 0, padding: '7px 14px', borderRadius: 10, textDecoration: 'none',
         background: t.accent, color: '#1a1206', fontSize: 13, fontWeight: 700,
       }}>
-        Sostieni
+        {tr('supportBanner.cta')}
       </a>
       <button
         onClick={dismiss}
-        title="Nascondi per un mese"
-        aria-label="Nascondi per un mese"
+        title={tr('supportBanner.dismiss')}
+        aria-label={tr('supportBanner.dismiss')}
         style={{
           flexShrink: 0, width: 26, height: 26, borderRadius: 8, border: 'none',
           background: 'transparent', color: t.textMuted, fontSize: 15, cursor: 'pointer',

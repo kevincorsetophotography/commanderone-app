@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTheme } from './useTheme'
 
 const FeedbackCtx = createContext(null)
@@ -7,6 +8,7 @@ let idSeq = 0
 
 export function FeedbackProvider({ children }) {
   const { t } = useTheme()
+  const { t: tr } = useTranslation()
   const [toasts, setToasts] = useState([])
   const [confirmState, setConfirmState] = useState(null)
   const resolveRef = useRef(null)
@@ -113,7 +115,7 @@ export function FeedbackProvider({ children }) {
                   background: t.bgMuted, color: t.textSub, border: `1px solid ${t.border}`,
                 }}
               >
-                {confirmState.cancelLabel || 'Annulla'}
+                {confirmState.cancelLabel || tr('common.cancel')}
               </button>
               <button
                 onClick={() => closeConfirm(true)}
@@ -125,7 +127,7 @@ export function FeedbackProvider({ children }) {
                   boxShadow: confirmState.danger ? 'none' : t.glow,
                 }}
               >
-                {confirmState.confirmLabel || 'Conferma'}
+                {confirmState.confirmLabel || tr('feedback.confirmDefault')}
               </button>
             </div>
           </div>
