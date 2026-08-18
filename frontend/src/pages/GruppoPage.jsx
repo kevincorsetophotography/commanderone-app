@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../hooks/useAuth'
@@ -11,6 +12,7 @@ import DeckThumb from '../components/DeckThumb'
 import BracketBadge from '../components/BracketBadge'
 import GameSocial from '../components/GameSocial'
 import { listSeasons, computeStandings, seasonOf } from '../lib/seasons'
+import { ordinal } from '../lib/ordinal'
 import PlayerAvatar from '../components/PlayerAvatar'
 import SeasonRecap from '../components/SeasonRecap'
 
@@ -101,22 +103,20 @@ function SectionHeader({ icon, title, collapsible, open, onToggle, t }) {
 
 // ─── main ──────────────────────────────────────────────────
 
-const TABS = [
-  { key: 'stagione',  label: 'Stagione' },
-  { key: 'giocatori', label: 'Giocatori' },
-  { key: 'mazzi',     label: 'Mazzi' },
-  { key: 'storico',   label: 'Storico' },
-]
+const TAB_KEYS = ['stagione', 'giocatori', 'mazzi', 'storico']
+const TAB_LABEL_KEY = { stagione: 'season', giocatori: 'players', mazzi: 'decks', storico: 'history' }
 
 export default function GruppoPage() {
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const { user } = useAuth()
   const { activeGroup } = useGroup()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const qTab = searchParams.get('tab')
-  const tab = TABS.some(x => x.key === qTab) ? qTab : 'stagione'
+  const tab = TAB_KEYS.includes(qTab) ? qTab : 'stagione'
   const setTab = (next) => setSearchParams(next === 'stagione' ? {} : { tab: next }, { replace: true })
 
   const [games, setGames]             = useState([])
@@ -141,7 +141,7 @@ export default function GruppoPage() {
   useEffect(() => {
     Promise.all([api.getGames(), api.statsPlayers(), api.statsDecks()])
       .then(([g, p, d]) => { setGames(g); setPlayerStats(p); setDeckStats(d) })
-      .catch(() => setError('Errore nel caricamento'))
+      .catch(() => setError(tr('gruppoPage.loadError')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -247,7 +247,7 @@ export default function GruppoPage() {
     const now = new Date()
     for (let i = 7; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString('it-IT', { month: 'short' }), count: 0 })
+      months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString(locale, { month: 'short' }), count: 0 })
     }
     const idx = Object.fromEntries(months.map((m, i) => [m.key, i]))
     for (const g of games) {
@@ -256,7 +256,7 @@ export default function GruppoPage() {
       if (k in idx) months[idx[k]].count++
     }
     return months
-  }, [games])
+  }, [games, locale])
 
   const card = {
     background: t.bgSurface,
@@ -275,7 +275,7 @@ export default function GruppoPage() {
       <SkeletonList rows={5} />
     </div>
   )
-  if (error) return <EmptyState icon="⚠️" title="Errore" message={error} />
+  if (error) return <EmptyState icon="⚠️" title={tr('gruppoPage.errorTitle')} message={error} />
 
   const totalGames = games.length
   const topPlayer  = playerStats[0]
@@ -285,15 +285,15 @@ export default function GruppoPage() {
     <div>
       {/* Metriche globali */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: '1.25rem' }}>
-        <MetricCard label="Partite totali"   value={totalGames}          icon={METRIC_ICONS.partite}   t={t} />
-        <MetricCard label="Giocatori"        value={playerStats.length}  icon={METRIC_ICONS.giocatori} t={t} />
-        <MetricCard label="Mazzi"            value={deckStats.length}    icon={METRIC_ICONS.mazzi}     t={t} />
-        <MetricCard label="Top player"       value={topPlayer?.username || '—'} icon={METRIC_ICONS.top} t={t} />
+        <MetricCard label={tr('gruppoPage.metrics.totalGames')} value={totalGames}          icon={METRIC_ICONS.partite}   t={t} />
+        <MetricCard label={tr('gruppoPage.metrics.players')}    value={playerStats.length}  icon={METRIC_ICONS.giocatori} t={t} />
+        <MetricCard label={tr('gruppoPage.metrics.decks')}      value={deckStats.length}     icon={METRIC_ICONS.mazzi}     t={t} />
+        <MetricCard label={tr('gruppoPage.metrics.topPlayer')}  value={topPlayer?.username || '—'} icon={METRIC_ICONS.top} t={t} />
       </div>
 
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: `1px solid ${t.border}`, paddingBottom: 0 }}>
-        {TABS.map(({ key, label }) => {
+        {TAB_KEYS.map(key => {
           const active = tab === key
           return (
             <button
@@ -309,7 +309,7 @@ export default function GruppoPage() {
                 transition: 'color 0.15s',
               }}
             >
-              {label}
+              {tr(`gruppoPage.tabs.${TAB_LABEL_KEY[key]}`)}
             </button>
           )
         })}
@@ -320,7 +320,7 @@ export default function GruppoPage() {
       {tab === 'stagione' && (
         <div>
           {seasons.length === 0 || !season ? (
-            <EmptyState icon="🏆" title="Nessuna stagione ancora" message="Registrate qualche partita per far partire la classifica stagionale." />
+            <EmptyState icon="🏆" title={tr('gruppoPage.noSeasonTitle')} message={tr('gruppoPage.noSeasonMessage')} />
           ) : (
             <>
               {(() => {
@@ -335,7 +335,7 @@ export default function GruppoPage() {
                     >
                       {seasons.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
                     </select>
-                    <span style={{ fontSize: 12, color: t.textMuted, flex: 1 }}>{season.total} partite · qualificato da {season.threshold}</span>
+                    <span style={{ fontSize: 12, color: t.textMuted, flex: 1 }}>{tr('gruppoPage.seasonSummary', { total: season.total, threshold: season.threshold })}</span>
                     {isCompleted && (
                       <button
                         onClick={() => setShowRecap(true)}
@@ -347,7 +347,7 @@ export default function GruppoPage() {
                           display: 'flex', alignItems: 'center', gap: 5,
                         }}
                       >
-                        🏅 Infografica
+                        {tr('gruppoPage.infographic')}
                       </button>
                     )}
                   </div>
@@ -363,18 +363,18 @@ export default function GruppoPage() {
                 }}>
                   <div style={{ fontSize: 38, lineHeight: 1, filter: 'drop-shadow(0 2px 8px rgba(52,240,143,0.4))' }}>🏆</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 10, color: t.primary, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>In testa alla stagione</div>
+                    <div style={{ fontSize: 10, color: t.primary, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>{tr('gruppoPage.seasonLeader')}</div>
                     <div style={{ fontSize: 22, fontWeight: 900, color: t.text, lineHeight: 1.1, marginTop: 2 }}>{season.champion.username}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 32, fontWeight: 900, color: t.primary, lineHeight: 1, filter: `drop-shadow(0 0 8px ${t.primary}60)` }}>{season.champion.points}</div>
-                    <div style={{ fontSize: 11, color: t.textMuted, letterSpacing: '0.04em' }}>punti</div>
+                    <div style={{ fontSize: 11, color: t.textMuted, letterSpacing: '0.04em' }}>{tr('gruppoPage.points')}</div>
                   </div>
                 </div>
               )}
 
               <div style={{ fontSize: 11.5, color: t.textMuted, margin: '4px 4px 10px' }}>
-                Punteggio: 1° = 3 · 2° = 2 · 3° = 1 · +1 presenza a ogni partita
+                {tr('gruppoPage.scoringExplanation')}
               </div>
 
               {season.standings.map((s, i) => (
@@ -384,21 +384,21 @@ export default function GruppoPage() {
                       <div style={{ minWidth: 28, textAlign: 'center', flexShrink: 0 }}>
                         {i < 3 && s.qualified
                           ? <span style={{ fontSize: 20, lineHeight: 1 }}>{['🥇', '🥈', '🥉'][i]}</span>
-                          : <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>{i + 1}°</span>
+                          : <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>{ordinal(i + 1, locale)}</span>
                         }
                       </div>
                       <PlayerAvatar username={s.username} avatarCardName={playerStats.find(p => p.id === s.id)?.avatarCardName} avatarScryfallId={playerStats.find(p => p.id === s.id)?.avatarScryfallId} />
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 600, color: t.text, display: 'flex', alignItems: 'center', gap: 6 }}>
                           {s.username}
-                          {!s.qualified && <span style={{ fontSize: 10, color: t.textMuted, fontWeight: 600, border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 5px' }}>non qualif.</span>}
+                          {!s.qualified && <span style={{ fontSize: 10, color: t.textMuted, fontWeight: 600, border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 5px' }}>{tr('gruppoPage.notQualified')}</span>}
                         </div>
-                        <div style={{ fontSize: 12, color: t.textSub }}>{s.games} partite · {s.wins} vittorie</div>
+                        <div style={{ fontSize: 12, color: t.textSub }}>{tr('gruppoPage.gamesCount', { count: s.games })} · {tr('gruppoPage.winsCount', { count: s.wins })}</div>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ fontSize: 22, fontWeight: 800, color: t.text }}>{s.points}</div>
-                      <div style={{ fontSize: 11, color: t.textMuted }}>punti</div>
+                      <div style={{ fontSize: 11, color: t.textMuted }}>{tr('gruppoPage.points')}</div>
                     </div>
                   </div>
                 </div>
@@ -407,24 +407,24 @@ export default function GruppoPage() {
           )}
 
           {/* ── PRIMATI ── */}
-          <SectionHeader icon="🥇" title="Primati" collapsible open={showPrimati} onToggle={() => setShowPrimati(v => !v)} t={t} />
+          <SectionHeader icon="🥇" title={tr('gruppoPage.records.sectionTitle')} collapsible open={showPrimati} onToggle={() => setShowPrimati(v => !v)} t={t} />
           {showPrimati && (
             !records ? (
-              <EmptyState icon="🏆" title="Nessun primato ancora" message="Servono partite registrate per calcolare record e statistiche del gruppo." />
+              <EmptyState icon="🏆" title={tr('gruppoPage.records.emptyTitle')} message={tr('gruppoPage.records.emptyMessage')} />
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8 }}>
                 {[
-                  { icon: '👑', label: 'Re del mese',      value: records.kingOfMonth?.[0] || '—',                        sub: records.kingOfMonth ? `${records.kingOfMonth[1]} vittorie` : 'nessuna partita' },
-                  { icon: '🔥', label: 'Streak record',     value: records.longestStreak ? `${records.longestStreak.best}×` : '—', sub: records.longestStreak?.username || '' },
-                  { icon: '🏅', label: 'Più vittorie',      value: records.mostWins?.username || '—',                      sub: records.mostWins ? `${records.mostWins.wins} vinte` : '' },
-                  { icon: '📈', label: 'Miglior win rate',  value: records.bestRate ? `${records.bestRate.winRate}%` : '—', sub: records.bestRate?.username || 'min 5 partite' },
-                  { icon: '🎴', label: 'Mazzo più forte',   value: records.topDeck?.name || '—',                           sub: records.topDeck ? `${records.topDeck.winRate}%` : 'min 3 partite' },
-                  { icon: '🎲', label: 'Più presenze',      value: records.mostGames?.username || '—',                     sub: records.mostGames ? `${records.mostGames.games} partite` : '' },
-                  { icon: '🪑', label: 'Tavolo record',     value: `${records.biggestTable.players.length} giocatori`,     sub: new Date(records.biggestTable.playedAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }) },
-                  { icon: '🛡️', label: 'Re sopravv.',       value: records.survivalKing?.username || '—',                  sub: records.survivalKing ? `avg ${records.survivalKing.avg.toFixed(1)}°` : 'serve ordine uscita' },
-                  { icon: '🪦', label: 'Sfortunato',        value: records.unluckiest?.username || '—',                    sub: records.unluckiest ? `${records.unluckiest.firstOuts}× 1° elim.` : 'serve ordine uscita' },
-                  { icon: '⚔️', label: 'Più spietato',      value: records.mostRuthless?.[0] || '—',                      sub: records.mostRuthless ? `${records.mostRuthless[1]} elim.` : 'serve kill tracking' },
-                  { icon: '🎯', label: 'Bersaglio',         value: records.biggestTarget?.[0] || '—',                     sub: records.biggestTarget ? `eliminato ${records.biggestTarget[1]}×` : 'serve kill tracking' },
+                  { icon: '👑', label: tr('gruppoPage.records.kingOfMonthLabel'), value: records.kingOfMonth?.[0] || '—',                        sub: records.kingOfMonth ? tr('gruppoPage.winsCount', { count: records.kingOfMonth[1] }) : tr('gruppoPage.records.kingOfMonthNone') },
+                  { icon: '🔥', label: tr('gruppoPage.records.streakLabel'),     value: records.longestStreak ? `${records.longestStreak.best}×` : '—', sub: records.longestStreak?.username || '' },
+                  { icon: '🏅', label: tr('gruppoPage.records.mostWinsLabel'),      value: records.mostWins?.username || '—',                      sub: records.mostWins ? tr('gruppoPage.records.mostWinsSub', { count: records.mostWins.wins }) : '' },
+                  { icon: '📈', label: tr('gruppoPage.records.bestRateLabel'),  value: records.bestRate ? `${records.bestRate.winRate}%` : '—', sub: records.bestRate?.username || tr('gruppoPage.records.bestRateFallback') },
+                  { icon: '🎴', label: tr('gruppoPage.records.topDeckLabel'),   value: records.topDeck?.name || '—',                           sub: records.topDeck ? `${records.topDeck.winRate}%` : tr('gruppoPage.records.topDeckFallback') },
+                  { icon: '🎲', label: tr('gruppoPage.records.mostGamesLabel'),      value: records.mostGames?.username || '—',                     sub: records.mostGames ? tr('gruppoPage.gamesCount', { count: records.mostGames.games }) : '' },
+                  { icon: '🪑', label: tr('gruppoPage.records.biggestTableLabel'),     value: tr('gamePage.playersCount', { count: records.biggestTable.players.length }),     sub: new Date(records.biggestTable.playedAt).toLocaleDateString(locale, { day: '2-digit', month: 'short' }) },
+                  { icon: '🛡️', label: tr('gruppoPage.records.survivalKingLabel'),       value: records.survivalKing?.username || '—',                  sub: records.survivalKing ? tr('gruppoPage.records.survivalKingSub', { value: records.survivalKing.avg.toFixed(1) }) : tr('gruppoPage.records.noOrderData') },
+                  { icon: '🪦', label: tr('gruppoPage.records.unluckiestLabel'),        value: records.unluckiest?.username || '—',                    sub: records.unluckiest ? tr('gruppoPage.records.unluckiestSub', { count: records.unluckiest.firstOuts, ord: ordinal(1, locale) }) : tr('gruppoPage.records.noOrderData') },
+                  { icon: '⚔️', label: tr('gruppoPage.records.mostRuthlessLabel'),      value: records.mostRuthless?.[0] || '—',                      sub: records.mostRuthless ? tr('gruppoPage.records.mostRuthlessSub', { count: records.mostRuthless[1] }) : tr('gruppoPage.records.noKillTracking') },
+                  { icon: '🎯', label: tr('gruppoPage.records.biggestTargetLabel'),         value: records.biggestTarget?.[0] || '—',                     sub: records.biggestTarget ? tr('gruppoPage.records.biggestTargetSub', { count: records.biggestTarget[1] }) : tr('gruppoPage.records.noKillTracking') },
                 ].map((r, i) => (
                   <div key={i} style={{ background: t.bgSurface, backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: `1px solid ${t.border}`, borderRadius: 12, padding: '0.6rem 0.75rem', boxShadow: t.shadow, position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: t.gradient }} />
@@ -438,29 +438,28 @@ export default function GruppoPage() {
           )}
 
           {/* ── META COLORI ── */}
-          <SectionHeader icon="🎨" title="Meta colori" collapsible open={showMeta} onToggle={() => setShowMeta(v => !v)} t={t} />
+          <SectionHeader icon="🎨" title={tr('gruppoPage.colorMetaTitle')} collapsible open={showMeta} onToggle={() => setShowMeta(v => !v)} t={t} />
           {showMeta && (
             <div style={card}>
               {colorMeta.every(c => c.games === 0) ? (
-                <div style={{ fontSize: 13, color: t.textMuted }}>Nessun dato</div>
+                <div style={{ fontSize: 13, color: t.textMuted }}>{tr('gruppoPage.noData')}</div>
               ) : colorMeta.map(c => {
-                const COLOR_BG  = { W: '#f5f0e0', U: '#b8d4e8', B: '#c8b8d8', R: '#e8c0b0', G: '#b8d8b8' }
-                const COLOR_LBL = { W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde' }
+                const COLOR_BG = { W: '#f5f0e0', U: '#b8d4e8', B: '#c8b8d8', R: '#e8c0b0', G: '#b8d8b8' }
                 return (
                   <div key={c.color} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
                     <span style={{ width: 22, height: 22, borderRadius: '50%', background: COLOR_BG[c.color], border: '1px solid rgba(0,0,0,0.15)', flexShrink: 0, fontSize: 10, fontWeight: 700, color: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{c.color}</span>
-                    <span style={{ fontSize: 12, color: t.textSub, width: 52, flexShrink: 0 }}>{COLOR_LBL[c.color]}</span>
+                    <span style={{ fontSize: 12, color: t.textSub, width: 52, flexShrink: 0 }}>{tr(`colors.${c.color}`)}</span>
                     <div style={{ flex: 1, height: 8, borderRadius: 4, background: t.bgMuted, overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${c.winRate}%`, background: t.primary, borderRadius: 4, transition: 'width 0.4s' }} />
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 600, color: t.text, width: 38, textAlign: 'right', flexShrink: 0 }}>{c.winRate}%</span>
-                    <span style={{ fontSize: 11, color: t.textMuted, width: 60, textAlign: 'right', flexShrink: 0 }}>{c.games} pres.</span>
+                    <span style={{ fontSize: 11, color: t.textMuted, width: 60, textAlign: 'right', flexShrink: 0 }}>{tr('gruppoPage.appearancesCount', { count: c.games })}</span>
                   </div>
                 )
               })}
 
               <div style={{ marginTop: 24 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 16 }}>Attivita · partite per mese</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 16 }}>{tr('gruppoPage.monthlyActivity')}</div>
                 {(() => {
                   const max = Math.max(1, ...activity.map(m => m.count))
                   return (
@@ -485,21 +484,21 @@ export default function GruppoPage() {
       {tab === 'giocatori' && (
         <div>
           {playerStats.length === 0 ? (
-            <EmptyState icon="👥" title="Nessun giocatore" message="Nessuna partita registrata ancora." />
+            <EmptyState icon="👥" title={tr('gruppoPage.noPlayersTitle')} message={tr('gruppoPage.noPlayersMessage')} />
           ) : (
             playerStats.map((p, i) => (
               <div key={p.id} className="ct-lift ct-fade-up" onClick={() => navigate(`/giocatore/${p.id}`)} style={{ ...card, cursor: 'pointer', animationDelay: `${Math.min(i, 7) * 45}ms` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: i === 0 ? t.primary : t.textMuted, minWidth: 22, textAlign: 'right' }}>{i + 1}°</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: i === 0 ? t.primary : t.textMuted, minWidth: 22, textAlign: 'right' }}>{ordinal(i + 1, locale)}</span>
                   <PlayerAvatar username={p.username} avatarCardName={p.avatarCardName} avatarScryfallId={p.avatarScryfallId} size={36} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, color: t.text, fontSize: 15 }}>{p.username}</div>
-                    <div style={{ fontSize: 12, color: t.textSub }}>{p.games} partite · {p.wins} vittorie</div>
+                    <div style={{ fontSize: 12, color: t.textSub }}>{tr('gruppoPage.gamesCount', { count: p.games })} · {tr('gruppoPage.winsCount', { count: p.wins })}</div>
                     <WinBar pct={p.winRate} t={t} />
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <div style={{ fontSize: 22, fontWeight: 900, color: p.winRate >= 30 ? t.win : t.text, lineHeight: 1 }}>{p.winRate}%</div>
-                    <div style={{ fontSize: 10, color: t.textMuted }}>win rate</div>
+                    <div style={{ fontSize: 10, color: t.textMuted }}>{tr('feed.winRate')}</div>
                   </div>
                 </div>
               </div>
@@ -512,7 +511,7 @@ export default function GruppoPage() {
       {tab === 'mazzi' && (
         <div>
           {deckStats.length === 0 ? (
-            <EmptyState icon="🃏" title="Nessun mazzo" message="Nessun mazzo registrato ancora." />
+            <EmptyState icon="🃏" title={tr('gruppoPage.noDecksTitle')} message={tr('gruppoPage.noDecksMessage')} />
           ) : (
             [...deckStats].sort((a, b) => b.winRate - a.winRate || b.wins - a.wins).map((d, i) => (
               <div key={d.id} className="ct-lift ct-fade-up" onClick={() => navigate(`/mazzo/${d.id}`)} style={{ ...card, cursor: 'pointer', animationDelay: `${Math.min(i, 7) * 45}ms` }}>
@@ -523,12 +522,12 @@ export default function GruppoPage() {
                       <span style={{ fontWeight: 700, color: t.text, fontSize: 14 }}>{d.name}</span>
                       {d.bracket && <BracketBadge bracket={d.bracket} />}
                     </div>
-                    <div style={{ fontSize: 12, color: t.textSub, marginTop: 1 }}>{d.owner} · {d.games} partite · {d.wins} vittorie</div>
+                    <div style={{ fontSize: 12, color: t.textSub, marginTop: 1 }}>{d.owner} · {tr('gruppoPage.gamesCount', { count: d.games })} · {tr('gruppoPage.winsCount', { count: d.wins })}</div>
                     <WinBar pct={d.winRate} t={t} />
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <div style={{ fontSize: 20, fontWeight: 900, color: d.winRate >= 30 ? t.win : t.text, lineHeight: 1 }}>{d.winRate}%</div>
-                    <div style={{ fontSize: 10, color: t.textMuted }}>win rate</div>
+                    <div style={{ fontSize: 10, color: t.textMuted }}>{tr('feed.winRate')}</div>
                   </div>
                 </div>
               </div>
@@ -543,52 +542,52 @@ export default function GruppoPage() {
           {/* Filtri data */}
           <div style={{ background: t.bgSurface, border: `0.5px solid ${t.border}`, borderRadius: 12, padding: '0.85rem 1rem', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: t.textSub }}>Periodo:</span>
+              <span style={{ fontSize: 12, color: t.textSub }}>{tr('gruppoPage.periodLabel')}</span>
               {[
-                { key: 'all', label: 'Tutto' }, { key: '7d', label: '7 giorni' },
-                { key: '30d', label: 'Mese' }, { key: '90d', label: '3 mesi' },
-                { key: '180d', label: '6 mesi' },
-              ].map(({ key, label }) => {
+                { key: 'all', labelKey: 'all' }, { key: '7d', labelKey: '7d' },
+                { key: '30d', labelKey: '30d' }, { key: '90d', labelKey: '90d' },
+                { key: '180d', labelKey: '180d' },
+              ].map(({ key, labelKey }) => {
                 const active = !historicFrom && !historicTo && historicPeriod === key
                 return (
                   <button key={key} onClick={() => { setHistoricPeriod(key); setHistoricFrom(''); setHistoricTo('') }} style={{ padding: '4px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500, transition: 'all 0.12s', background: active ? t.primary : t.bgMuted, color: active ? t.primaryFg : t.textSub }}>
-                    {label}
+                    {tr(`gruppoPage.periods.${labelKey}`)}
                   </button>
                 )
               })}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: t.textSub }}>Da:</span>
+              <span style={{ fontSize: 12, color: t.textSub }}>{tr('gruppoPage.fromLabel')}</span>
               <input type='date' value={historicFrom} onChange={e => { setHistoricFrom(e.target.value); setHistoricPeriod('') }} style={{ padding: '4px 8px', borderRadius: 6, border: `0.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: 'none', cursor: 'pointer' }} />
-              <span style={{ fontSize: 12, color: t.textSub }}>A:</span>
+              <span style={{ fontSize: 12, color: t.textSub }}>{tr('gruppoPage.toLabel')}</span>
               <input type='date' value={historicTo}   onChange={e => { setHistoricTo(e.target.value); setHistoricPeriod('') }} style={{ padding: '4px 8px', borderRadius: 6, border: `0.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: 'none', cursor: 'pointer' }} />
               {(historicFrom || historicTo) && (
-                <button onClick={() => { setHistoricFrom(''); setHistoricTo(''); setHistoricPeriod('all') }} style={{ fontSize: 11, color: t.primary, background: 'none', border: 'none', cursor: 'pointer' }}>✕ reset</button>
+                <button onClick={() => { setHistoricFrom(''); setHistoricTo(''); setHistoricPeriod('all') }} style={{ fontSize: 11, color: t.primary, background: 'none', border: 'none', cursor: 'pointer' }}>{tr('gruppoPage.resetFilter')}</button>
               )}
             </div>
           </div>
 
           {(historicPeriod !== 'all' || historicFrom || historicTo) && (
             <div style={{ fontSize: 12, color: t.textSub, marginBottom: 8, paddingLeft: 4 }}>
-              {visibleGames.length} partita{visibleGames.length !== 1 ? 'e' : ''} nel periodo selezionato
+              {tr('gruppoPage.gamesInPeriod', { count: visibleGames.length })}
             </div>
           )}
 
           {visibleGames.length === 0 && (
             games.length === 0
-              ? <EmptyState icon="🃏" title="Storico vuoto" message="Nessuna partita registrata. Vai su Gioca per aggiungerne una." />
-              : <div style={{ ...card, color: t.textSub, fontSize: 14, textAlign: 'center', padding: '2rem' }}>Nessuna partita nel periodo selezionato</div>
+              ? <EmptyState icon="🃏" title={tr('gruppoPage.emptyHistoryTitle')} message={tr('gruppoPage.emptyHistoryMessage')} />
+              : <div style={{ ...card, color: t.textSub, fontSize: 14, textAlign: 'center', padding: '2rem' }}>{tr('gruppoPage.noGamesInPeriod')}</div>
           )}
 
           {visibleGames.map(g => {
             const winner = g.players.find(p => p.isWinner)
-            const date   = new Date(g.playedAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })
+            const date   = new Date(g.playedAt).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
             return (
               <div key={g.id} style={card}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                   <div onClick={() => navigate(`/partita/${g.id}`)} style={{ fontSize: 12, color: t.textMuted, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                     <span style={{ textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 2 }}>{date}</span>
-                    <span>· {g.players.length} giocatori</span>
+                    <span>· {tr('gamePage.playersCount', { count: g.players.length })}</span>
                     <span style={{ color: t.primary, fontWeight: 700 }}>›</span>
                   </div>
                   {winner && (
@@ -605,7 +604,7 @@ export default function GruppoPage() {
                       {ordered.map(p => (
                         <span key={p.id} onClick={() => navigate(`/mazzo/${p.deck.id}`)} style={{ fontSize: 12, padding: '3px 10px 3px 4px', borderRadius: 20, background: p.isWinner ? t.winBg : t.bgMuted, color: p.isWinner ? t.win : t.textSub, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                           <DeckThumb commander={p.deck.commander} w={20} round preview={false} />
-                          {ranked && <span style={{ fontWeight: 800, opacity: 0.8 }}>{p.placement}°</span>}
+                          {ranked && <span style={{ fontWeight: 800, opacity: 0.8 }}>{ordinal(p.placement, locale)}</span>}
                           {p.user.username} · {p.deck.name}
                         </span>
                       ))}
