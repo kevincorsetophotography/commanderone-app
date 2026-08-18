@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../hooks/useAuth'
@@ -10,10 +11,11 @@ import BracketBadge from '../components/BracketBadge'
 import ArchetypeBadge from '../components/ArchetypeBadge'
 import GameSocial from '../components/GameSocial'
 import { ARCHETYPE_OPTIONS } from '../lib/archetypes'
-import { BRACKETS, BRACKET_OPTIONS } from '../lib/brackets'
+import { BRACKETS, BRACKET_OPTIONS, bracketLabel } from '../lib/brackets'
 import { useCountUp } from '../hooks/useCountUp'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { listSeasons, computeStandings } from '../lib/seasons'
+import { ordinal } from '../lib/ordinal'
 import PlayerAvatar from '../components/PlayerAvatar'
 
 function WinBar({ pct, t }) {
@@ -48,6 +50,8 @@ function MetricCard({ label, value, t }) {
 
 export default function DashboardPage() {
   const { t } = useTheme()
+  const { t: tr, i18n } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'it-IT'
   const { user } = useAuth()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
@@ -82,7 +86,7 @@ export default function DashboardPage() {
       api.getGames()
     ]).then(([p, d, m, g]) => {
       setPlayerStats(p); setDeckStats(d); setMatchups(m); setGames(g)
-    }).catch(() => setError('Errore nel caricamento statistiche')).finally(() => setLoading(false))
+    }).catch(() => setError(tr('dashboardPage.loadError'))).finally(() => setLoading(false))
   }, [])
 
   const [matchupOppOwner,  setMatchupOppOwner]  = useState('')
@@ -310,7 +314,7 @@ export default function DashboardPage() {
     const now = new Date()
     for (let i = 7; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString('it-IT', { month: 'short' }), count: 0 })
+      months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString(locale, { month: 'short' }), count: 0 })
     }
     const idx = Object.fromEntries(months.map((m, i) => [m.key, i]))
     for (const g of games) {
@@ -319,7 +323,7 @@ export default function DashboardPage() {
       if (k in idx) months[idx[k]].count++
     }
     return months
-  }, [games])
+  }, [games, locale])
 
   const card = {
     background: t.bgSurface,
@@ -349,7 +353,7 @@ export default function DashboardPage() {
       <SkeletonList rows={5} />
     </div>
   )
-  if (error)   return <EmptyState icon="⚠️" title="Errore" message={error} />
+  if (error)   return <EmptyState icon="⚠️" title={tr('gruppoPage.errorTitle')} message={error} />
 
   const totalGames = games.length
   const topPlayer  = playerStats[0]
@@ -359,10 +363,10 @@ export default function DashboardPage() {
     <div>
       {/* Metriche globali */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: '1.5rem' }}>
-        <MetricCard label="Partite totali"    value={totalGames}                    t={t} />
-        <MetricCard label="Giocatori"         value={playerStats.length}            t={t} />
-        <MetricCard label="Mazzi registrati"  value={deckStats.length}              t={t} />
-        <MetricCard label="Top player"        value={topPlayer?.username || '—'}    t={t} />
+        <MetricCard label={tr('gruppoPage.metrics.totalGames')}    value={totalGames}                    t={t} />
+        <MetricCard label={tr('gruppoPage.metrics.players')}       value={playerStats.length}            t={t} />
+        <MetricCard label={tr('dashboardPage.metrics.decksRegistered')}  value={deckStats.length}        t={t} />
+        <MetricCard label={tr('gruppoPage.metrics.topPlayer')}     value={topPlayer?.username || '—'}    t={t} />
       </div>
 
       {/* Tab selector */}
@@ -384,7 +388,7 @@ export default function DashboardPage() {
       >
         {['stagione', 'giocatori', 'mazzi', 'matchup', 'storico', 'primati'].map(t2 => (
           <button key={t2} style={{ ...tabBtn(t2), flexShrink: 0 }} onClick={() => setTab(t2)}>
-            {t2.charAt(0).toUpperCase() + t2.slice(1)}
+            {tr(`dashboardPage.tabs.${t2}`)}
           </button>
         ))}
       </div>
@@ -393,7 +397,7 @@ export default function DashboardPage() {
       {tab === 'stagione' && (
         <div>
           {seasons.length === 0 || !season ? (
-            <EmptyState icon="🏆" title="Nessuna stagione ancora" message="Registrate qualche partita per far partire la classifica stagionale." />
+            <EmptyState icon="🏆" title={tr('gruppoPage.noSeasonTitle')} message={tr('gruppoPage.noSeasonMessage')} />
           ) : (
             <>
               {/* Selettore stagione */}
@@ -405,7 +409,7 @@ export default function DashboardPage() {
                 >
                   {seasons.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
-                <span style={{ fontSize: 12, color: t.textMuted }}>{season.total} partite · qualificato da {season.threshold} partite</span>
+                <span style={{ fontSize: 12, color: t.textMuted }}>{tr('dashboardPage.seasonSummary', { total: season.total, threshold: season.threshold })}</span>
               </div>
 
               {/* Campione / in testa */}
@@ -413,19 +417,19 @@ export default function DashboardPage() {
                 <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 14, borderColor: t.primaryBorder }}>
                   <div style={{ fontSize: 34 }}>🏆</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>In testa alla stagione</div>
+                    <div style={{ fontSize: 11, color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>{tr('gruppoPage.seasonLeader')}</div>
                     <div style={{ fontSize: 20, fontWeight: 800, color: t.text }}>{season.champion.username}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 26, fontWeight: 900, color: t.primary, lineHeight: 1 }}>{season.champion.points}</div>
-                    <div style={{ fontSize: 11, color: t.textMuted }}>punti</div>
+                    <div style={{ fontSize: 11, color: t.textMuted }}>{tr('gruppoPage.points')}</div>
                   </div>
                 </div>
               )}
 
               {/* Legenda punteggio */}
               <div style={{ fontSize: 11.5, color: t.textMuted, margin: '4px 4px 10px' }}>
-                Punteggio: 1° = 3 · 2° = 2 · 3° = 1 · +1 presenza a ogni partita
+                {tr('gruppoPage.scoringExplanation')}
               </div>
 
               {/* Classifica */}
@@ -435,23 +439,23 @@ export default function DashboardPage() {
                   className="ct-lift"
                   onClick={() => navigate(`/giocatore/${s.id}`)}
                   style={{ ...card, cursor: 'pointer', opacity: s.qualified ? 1 : 0.62 }}
-                  title="Apri il profilo del giocatore"
+                  title={tr('dashboardPage.openPlayerProfile')}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: i === 0 && s.qualified ? t.primary : t.textMuted, minWidth: 22 }}>{i + 1}°</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: i === 0 && s.qualified ? t.primary : t.textMuted, minWidth: 22 }}>{ordinal(i + 1, locale)}</span>
                       <PlayerAvatar username={s.username} avatarCardName={playerStats.find(p => p.id === s.id)?.avatarCardName} avatarScryfallId={playerStats.find(p => p.id === s.id)?.avatarScryfallId} />
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 600, color: t.text, display: 'flex', alignItems: 'center', gap: 6 }}>
                           {s.username}
-                          {!s.qualified && <span style={{ fontSize: 10, color: t.textMuted, fontWeight: 600, border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 5px' }}>non qualif.</span>}
+                          {!s.qualified && <span style={{ fontSize: 10, color: t.textMuted, fontWeight: 600, border: `1px solid ${t.border}`, borderRadius: 6, padding: '1px 5px' }}>{tr('gruppoPage.notQualified')}</span>}
                         </div>
-                        <div style={{ fontSize: 12, color: t.textSub }}>{s.games} partite · {s.wins} vittorie</div>
+                        <div style={{ fontSize: 12, color: t.textSub }}>{tr('gruppoPage.gamesCount', { count: s.games })} · {tr('gruppoPage.winsCount', { count: s.wins })}</div>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ fontSize: 22, fontWeight: 800, color: t.text }}>{s.points}</div>
-                      <div style={{ fontSize: 11, color: t.textMuted }}>punti</div>
+                      <div style={{ fontSize: 11, color: t.textMuted }}>{tr('gruppoPage.points')}</div>
                     </div>
                   </div>
                 </div>
@@ -465,7 +469,7 @@ export default function DashboardPage() {
       {tab === 'giocatori' && (
         <div>
           {playerStats.length === 0 && (
-            <EmptyState icon="🃏" title="Ancora nessuna partita" message="Registrate la prima partita dalla pagina '+ Partita' per vedere le classifiche dei giocatori." />
+            <EmptyState icon="🃏" title={tr('dashboardPage.noGamesYetTitle')} message={tr('dashboardPage.noGamesYetMessage')} />
           )}
           {playerStats.map((p, i) => {
             const isOpen   = expandedPlayerId === p.id
@@ -483,7 +487,7 @@ export default function DashboardPage() {
                     <PlayerAvatar username={p.username} avatarCardName={p.avatarCardName} avatarScryfallId={p.avatarScryfallId} />
                     <div>
                       <div style={{ fontWeight: 500, color: t.text }}>{p.username}</div>
-                      <div style={{ fontSize: 12, color: t.textSub }}>{p.wins}V / {p.games - p.wins}P · {p.games} partite</div>
+                      <div style={{ fontSize: 12, color: t.textSub }}>{tr('dashboardPage.playerRecordLine', { wins: p.wins, losses: p.games - p.wins, games: p.games })}</div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -501,16 +505,16 @@ export default function DashboardPage() {
                       onClick={(e) => { e.stopPropagation(); navigate(`/giocatore/${p.id}`) }}
                       style={{ marginBottom: 10, padding: '6px 14px', borderRadius: 10, border: `1px solid ${t.primaryBorder}`, background: t.primaryBg, color: t.primary, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                     >
-                      Vedi profilo completo →
+                      {tr('dashboardPage.viewFullProfile')}
                     </button>
                     {myDecks.length === 0 ? (
-                      <div style={{ fontSize: 13, color: t.textMuted }}>Nessun mazzo con partite registrate</div>
+                      <div style={{ fontSize: 13, color: t.textMuted }}>{tr('dashboardPage.noDecksWithGames')}</div>
                     ) : (
                       myDecks.map((deck, di) => (
                         <div
                           key={deck.id}
                           onClick={() => navigate(`/mazzo/${deck.id}`)}
-                          title="Apri il profilo del mazzo"
+                          title={tr('decksPage.openDeckProfile')}
                           style={{
                             padding: '8px 0',
                             borderBottom: di < myDecks.length - 1 ? `0.5px solid ${t.border}` : 'none',
@@ -529,13 +533,13 @@ export default function DashboardPage() {
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                               <span style={{ fontSize: 11, color: t.textMuted }}>
-                                {deck.wins}V · {deck.games - deck.wins}P
+                                {tr('dashboardPage.deckRecordShort', { wins: deck.wins, losses: deck.games - deck.wins })}
                               </span>
                               <span style={{
                                 fontSize: 14, fontWeight: 600, minWidth: 38, textAlign: 'right',
                                 color: deck.winRate >= 50 ? t.win : deck.winRate > 0 ? t.primary : t.textMuted
                               }}>
-                                {deck.games > 0 ? `${deck.winRate}%` : 'n/a'}
+                                {deck.games > 0 ? `${deck.winRate}%` : tr('deckProfilePage.notApplicable')}
                               </span>
                             </div>
                           </div>
@@ -559,7 +563,7 @@ export default function DashboardPage() {
 
             {/* Filtro colore */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: t.textSub }}>Colore:</span>
+              <span style={{ fontSize: 12, color: t.textSub }}>{tr('dashboardPage.colorLabel')}</span>
               {['W','U','B','R','G'].map(c => {
                 const bg = { W:'#f5f0e0', U:'#b8d4e8', B:'#c8b8d8', R:'#e8c0b0', G:'#b8d8b8' }[c]
                 const active = colorFilter.includes(c)
@@ -576,46 +580,46 @@ export default function DashboardPage() {
               })}
               {colorFilter.length > 0 && (
                 <button onClick={() => setColorFilter([])} style={{ fontSize: 11, color: t.primary, background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px' }}>
-                  ✕ reset
+                  {tr('dashboardPage.resetFilter')}
                 </button>
               )}
             </div>
 
             {/* Filtro utente */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: t.textSub }}>Giocatore:</span>
+              <span style={{ fontSize: 12, color: t.textSub }}>{tr('dashboardPage.playerLabel')}</span>
               <select
                 value={ownerFilter}
                 onChange={e => setOwnerFilter(e.target.value)}
                 style={{ padding: '4px 8px', borderRadius: 6, border: `0.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, cursor: 'pointer', outline: 'none' }}
               >
-                <option value=''>Tutti</option>
+                <option value=''>{tr('dashboardPage.allOption')}</option>
                 {deckOwners.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
 
             {/* Filtro bracket */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: t.textSub }}>Livello:</span>
+              <span style={{ fontSize: 12, color: t.textSub }}>{tr('dashboardPage.levelLabel')}</span>
               <select
                 value={bracketFilter}
                 onChange={e => setBracketFilter(e.target.value)}
                 style={{ padding: '4px 8px', borderRadius: 6, border: `0.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, cursor: 'pointer', outline: 'none' }}
               >
-                <option value=''>Tutti</option>
-                {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {BRACKETS[b].label}</option>)}
+                <option value=''>{tr('dashboardPage.allOption')}</option>
+                {BRACKET_OPTIONS.map(b => <option key={b} value={b}>B{b} · {bracketLabel(b, tr)}</option>)}
               </select>
             </div>
 
             {/* Filtro archetipo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: t.textSub }}>Archetipo:</span>
+              <span style={{ fontSize: 12, color: t.textSub }}>{tr('dashboardPage.archetypeLabel')}</span>
               <select
                 value={archetypeFilter}
                 onChange={e => setArchetypeFilter(e.target.value)}
                 style={{ padding: '4px 8px', borderRadius: 6, border: `0.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, cursor: 'pointer', outline: 'none' }}
               >
-                <option value=''>Tutti</option>
+                <option value=''>{tr('dashboardPage.allOption')}</option>
                 {ARCHETYPE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
@@ -625,7 +629,7 @@ export default function DashboardPage() {
               <input
                 value={deckSearch}
                 onChange={e => setDeckSearch(e.target.value)}
-                placeholder="🔍 Cerca mazzo o commander"
+                placeholder={tr('dashboardPage.searchDeckPlaceholder')}
                 style={{ padding: '5px 10px', borderRadius: 6, border: `0.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: 'none', width: 200 }}
               />
               {deckSearch && (
@@ -635,12 +639,12 @@ export default function DashboardPage() {
 
             {/* Ordinamento */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-              <span style={{ fontSize: 12, color: t.textSub }}>Win rate:</span>
+              <span style={{ fontSize: 12, color: t.textSub }}>{tr('dashboardPage.winRateLabel')}</span>
               <button
                 onClick={() => setDeckSortDir(d => d === 'desc' ? 'asc' : 'desc')}
                 style={{ padding: '4px 10px', borderRadius: 6, border: `0.5px solid ${t.border}`, background: t.bgMuted, color: t.text, fontSize: 13, cursor: 'pointer' }}
               >
-                {deckSortDir === 'desc' ? '↓ Desc' : '↑ Asc'}
+                {deckSortDir === 'desc' ? tr('dashboardPage.sortDesc') : tr('dashboardPage.sortAsc')}
               </button>
             </div>
           </div>
@@ -648,13 +652,13 @@ export default function DashboardPage() {
           {/* Contatore risultati */}
           {(colorFilter.length > 0 || ownerFilter || deckSearch || bracketFilter || archetypeFilter) && (
             <div style={{ fontSize: 12, color: t.textSub, marginBottom: 8, paddingLeft: 4 }}>
-              {visibleDecks.length} mazzo{visibleDecks.length !== 1 ? 'i' : ''} trovato{visibleDecks.length !== 1 ? 'i' : ''}
+              {tr('dashboardPage.decksFoundCount', { count: visibleDecks.length })}
             </div>
           )}
 
           {visibleDecks.length === 0 && (
             <div style={{ ...card, color: t.textSub, fontSize: 14, textAlign: 'center', padding: '2rem' }}>
-              {deckStats.length === 0 ? 'Nessun mazzo ha ancora giocato' : 'Nessun mazzo corrisponde ai filtri'}
+              {deckStats.length === 0 ? tr('dashboardPage.noDecksPlayed') : tr('dashboardPage.noDecksMatchFilters')}
             </div>
           )}
 
@@ -685,9 +689,9 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ fontSize: 20, fontWeight: 600, color: d.winRate >= 50 ? t.win : d.winRate > 0 ? t.primary : t.textMuted }}>
-                    {d.games > 0 ? `${d.winRate}%` : 'n/a'}
+                    {d.games > 0 ? `${d.winRate}%` : tr('deckProfilePage.notApplicable')}
                   </div>
-                  <div style={{ fontSize: 11, color: t.textMuted }}>{d.games} partite</div>
+                  <div style={{ fontSize: 11, color: t.textMuted }}>{tr('gruppoPage.gamesCount', { count: d.games })}</div>
                 </div>
               </div>
               {d.games > 0 && <WinBar pct={d.winRate} t={t} />}
@@ -701,13 +705,13 @@ export default function DashboardPage() {
         <div>
           {myMatchupDecks.length === 0 ? (
             <div style={{ ...card, color: t.textSub, fontSize: 14, textAlign: 'center', padding: '2rem' }}>
-              Nessun matchup disponibile — gioca qualche partita prima!
+              {tr('dashboardPage.noMatchupsAvailable')}
             </div>
           ) : (
             <>
               {/* Selettore mio mazzo */}
               <div style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 12, color: t.textSub, marginBottom: 8 }}>Il tuo mazzo:</div>
+                <div style={{ fontSize: 12, color: t.textSub, marginBottom: 8 }}>{tr('dashboardPage.yourDeckLabel')}</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {myMatchupDecks.map(deck => (
                     <button
@@ -732,26 +736,26 @@ export default function DashboardPage() {
 
                   {/* Per giocatore */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 12, color: t.textSub }}>Giocatore:</span>
+                    <span style={{ fontSize: 12, color: t.textSub }}>{tr('dashboardPage.playerLabel')}</span>
                     <select
                       value={matchupOppOwner}
                       onChange={e => { setMatchupOppOwner(e.target.value); setMatchupOppDeck('') }}
                       style={{ padding: '4px 8px', borderRadius: 6, border: `0.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, cursor: 'pointer', outline: 'none' }}
                     >
-                      <option value=''>Tutti</option>
+                      <option value=''>{tr('dashboardPage.allOption')}</option>
                       {oppPlayers.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
 
                   {/* Per mazzo */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 12, color: t.textSub }}>Mazzo:</span>
+                    <span style={{ fontSize: 12, color: t.textSub }}>{tr('adminPage.deckPlaceholderPlain')}:</span>
                     <select
                       value={matchupOppDeck}
                       onChange={e => setMatchupOppDeck(e.target.value)}
                       style={{ padding: '4px 8px', borderRadius: 6, border: `0.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, cursor: 'pointer', outline: 'none' }}
                     >
-                      <option value=''>Tutti</option>
+                      <option value=''>{tr('dashboardPage.allOption')}</option>
                       {oppDeckNames.map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
@@ -761,17 +765,17 @@ export default function DashboardPage() {
                       onClick={() => { setMatchupOppOwner(''); setMatchupOppDeck('') }}
                       style={{ fontSize: 11, color: t.primary, background: 'none', border: 'none', cursor: 'pointer' }}
                     >
-                      ✕ reset
+                      {tr('dashboardPage.resetFilter')}
                     </button>
                   )}
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-                    <span style={{ fontSize: 12, color: t.textSub }}>Win rate:</span>
+                    <span style={{ fontSize: 12, color: t.textSub }}>{tr('dashboardPage.winRateLabel')}</span>
                     <button
                       onClick={() => setMatchupSortDir(d => d === 'desc' ? 'asc' : 'desc')}
                       style={{ padding: '4px 10px', borderRadius: 6, border: `0.5px solid ${t.border}`, background: t.bgMuted, color: t.text, fontSize: 13, cursor: 'pointer' }}
                     >
-                      {matchupSortDir === 'desc' ? '↓ Desc' : '↑ Asc'}
+                      {matchupSortDir === 'desc' ? tr('dashboardPage.sortDesc') : tr('dashboardPage.sortAsc')}
                     </button>
                   </div>
                 </div>
@@ -780,23 +784,23 @@ export default function DashboardPage() {
               {/* Risultati */}
               {filteredMatchups.length === 0 ? (
                 <div style={{ ...card, color: t.textSub, fontSize: 14, textAlign: 'center', padding: '1.5rem' }}>
-                  Nessun dato per i filtri selezionati
+                  {tr('dashboardPage.noMatchupData')}
                 </div>
               ) : (
                 <>
                   <div style={{ fontSize: 12, color: t.textSub, marginBottom: 8, paddingLeft: 4 }}>
-                    {filteredMatchups.length} avversar{filteredMatchups.length === 1 ? 'io' : 'i'}
-                    {(matchupOppOwner || matchupOppDeck) && ' (filtrati)'}
+                    {tr('dashboardPage.opponentsCount', { count: filteredMatchups.length })}
+                    {(matchupOppOwner || matchupOppDeck) && tr('dashboardPage.filteredSuffix')}
                   </div>
                   {filteredMatchups.map((m, i) => (
-                    <div key={i} className="ct-lift" style={{ ...card, cursor: 'pointer' }} onClick={() => navigate(`/mazzo/${m.deckB.id}`)} title="Apri il profilo del mazzo">
+                    <div key={i} className="ct-lift" style={{ ...card, cursor: 'pointer' }} onClick={() => navigate(`/mazzo/${m.deckB.id}`)} title={tr('decksPage.openDeckProfile')}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                           <DeckThumb commander={commanderById[m.deckB.id]} w={48} preview={false} />
                           <div style={{ minWidth: 0 }}>
                             <div style={{ fontWeight: 500, fontSize: 14, color: t.text }}>{m.deckB.name}</div>
                             <div style={{ fontSize: 12, color: t.textSub }}>
-                              di {m.deckB.owner} · {m.games} {m.games === 1 ? 'partita' : 'partite'} in comune
+                              {tr('dashboardPage.matchupGamesInCommon', { owner: m.deckB.owner, count: m.games })}
                             </div>
                           </div>
                         </div>
@@ -805,7 +809,7 @@ export default function DashboardPage() {
                             {m.winRate}%
                           </div>
                           <div style={{ fontSize: 11, color: t.textMuted }}>
-                            {m.wins}V · {m.games - m.wins}P
+                            {tr('dashboardPage.deckRecordShort', { wins: m.wins, losses: m.games - m.wins })}
                           </div>
                         </div>
                       </div>
@@ -827,14 +831,14 @@ export default function DashboardPage() {
 
             {/* Presets periodo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: t.textSub }}>Periodo:</span>
+              <span style={{ fontSize: 12, color: t.textSub }}>{tr('gruppoPage.periodLabel')}</span>
               {[
-                { key: 'all',  label: 'Tutto' },
-                { key: '7d',   label: '7 giorni' },
-                { key: '30d',  label: 'Mese' },
-                { key: '90d',  label: '3 mesi' },
-                { key: '180d', label: '6 mesi' },
-              ].map(({ key, label }) => {
+                { key: 'all',  labelKey: 'all' },
+                { key: '7d',   labelKey: '7d' },
+                { key: '30d',  labelKey: '30d' },
+                { key: '90d',  labelKey: '90d' },
+                { key: '180d', labelKey: '180d' },
+              ].map(({ key, labelKey }) => {
                 const active = !historicFrom && !historicTo && historicPeriod === key
                 return (
                   <button
@@ -847,7 +851,7 @@ export default function DashboardPage() {
                       color: active ? t.primaryFg : t.textSub,
                     }}
                   >
-                    {label}
+                    {tr(`gruppoPage.periods.${labelKey}`)}
                   </button>
                 )
               })}
@@ -855,14 +859,14 @@ export default function DashboardPage() {
 
             {/* Range personalizzato */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: t.textSub }}>Da:</span>
+              <span style={{ fontSize: 12, color: t.textSub }}>{tr('gruppoPage.fromLabel')}</span>
               <input
                 type='date'
                 value={historicFrom}
                 onChange={e => { setHistoricFrom(e.target.value); setHistoricPeriod('') }}
                 style={{ padding: '4px 8px', borderRadius: 6, border: `0.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: 'none', cursor: 'pointer' }}
               />
-              <span style={{ fontSize: 12, color: t.textSub }}>A:</span>
+              <span style={{ fontSize: 12, color: t.textSub }}>{tr('gruppoPage.toLabel')}</span>
               <input
                 type='date'
                 value={historicTo}
@@ -874,7 +878,7 @@ export default function DashboardPage() {
                   onClick={() => { setHistoricFrom(''); setHistoricTo(''); setHistoricPeriod('all') }}
                   style={{ fontSize: 11, color: t.primary, background: 'none', border: 'none', cursor: 'pointer' }}
                 >
-                  ✕ reset
+                  {tr('gruppoPage.resetFilter')}
                 </button>
               )}
             </div>
@@ -883,29 +887,29 @@ export default function DashboardPage() {
           {/* Contatore */}
           {(historicPeriod !== 'all' || historicFrom || historicTo) && (
             <div style={{ fontSize: 12, color: t.textSub, marginBottom: 8, paddingLeft: 4 }}>
-              {visibleGames.length} partita{visibleGames.length !== 1 ? 'e' : ''} nel periodo selezionato
+              {tr('gruppoPage.gamesInPeriod', { count: visibleGames.length })}
             </div>
           )}
 
           {visibleGames.length === 0 && (
             games.length === 0
-              ? <EmptyState icon="🃏" title="Storico vuoto" message="Nessuna partita registrata. Vai su '+ Partita' per aggiungerne una." />
-              : <div style={{ ...card, color: t.textSub, fontSize: 14, textAlign: 'center', padding: '2rem' }}>Nessuna partita nel periodo selezionato</div>
+              ? <EmptyState icon="🃏" title={tr('gruppoPage.emptyHistoryTitle')} message={tr('gruppoPage.emptyHistoryMessage')} />
+              : <div style={{ ...card, color: t.textSub, fontSize: 14, textAlign: 'center', padding: '2rem' }}>{tr('gruppoPage.noGamesInPeriod')}</div>
           )}
 
           {visibleGames.map(g => {
             const winner = g.players.find(p => p.isWinner)
-            const date = new Date(g.playedAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })
+            const date = new Date(g.playedAt).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
             return (
               <div key={g.id} style={card}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                   <div
                     onClick={() => navigate(`/partita/${g.id}`)}
-                    title="Apri la partita"
+                    title={tr('dashboardPage.openGame')}
                     style={{ fontSize: 12, color: t.textMuted, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}
                   >
                     <span style={{ textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 2 }}>{date}</span>
-                    <span>· {g.players.length} giocatori</span>
+                    <span>· {tr('gamePage.playersCount', { count: g.players.length })}</span>
                     <span style={{ color: t.primary, fontWeight: 700 }}>›</span>
                   </div>
                   {winner && (
@@ -923,7 +927,7 @@ export default function DashboardPage() {
                         <span
                           key={p.id}
                           onClick={() => navigate(`/mazzo/${p.deck.id}`)}
-                          title="Apri il profilo del mazzo"
+                          title={tr('decksPage.openDeckProfile')}
                           style={{
                             fontSize: 12, padding: '3px 10px 3px 4px', borderRadius: 20,
                             background: p.isWinner ? t.winBg : t.bgMuted,
@@ -932,7 +936,7 @@ export default function DashboardPage() {
                           }}
                         >
                           <DeckThumb commander={p.deck.commander} w={20} round preview={false} />
-                          {ranked && <span style={{ fontWeight: 800, opacity: 0.8 }}>{p.placement}°</span>}
+                          {ranked && <span style={{ fontWeight: 800, opacity: 0.8 }}>{ordinal(p.placement, locale)}</span>}
                           {p.user.username} · {p.deck.name}
                         </span>
                       ))}
@@ -963,23 +967,23 @@ export default function DashboardPage() {
       {tab === 'primati' && (
         <div>
           {!records ? (
-            <EmptyState icon="🏆" title="Nessun primato ancora" message="Servono partite registrate per calcolare record e statistiche del gruppo." />
+            <EmptyState icon="🏆" title={tr('gruppoPage.records.emptyTitle')} message={tr('gruppoPage.records.emptyMessage')} />
           ) : (
             <>
               {/* Card record */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 18 }}>
                 {[
-                  { icon: '👑', label: 'Re del mese', value: records.kingOfMonth?.[0] || '—', sub: records.kingOfMonth ? `${records.kingOfMonth[1]} vittorie questo mese` : 'nessuna partita questo mese' },
-                  { icon: '🔥', label: 'Streak record', value: records.longestStreak ? `${records.longestStreak.best} di fila` : '—', sub: records.longestStreak?.username || '' },
-                  { icon: '🏅', label: 'Più vittorie', value: records.mostWins?.username || '—', sub: records.mostWins ? `${records.mostWins.wins} vittorie` : '' },
-                  { icon: '📈', label: 'Miglior win rate', value: records.bestRate ? `${records.bestRate.winRate}%` : '—', sub: records.bestRate ? `${records.bestRate.username} · min 5 partite` : 'min 5 partite' },
-                  { icon: '🎴', label: 'Mazzo più forte', value: records.topDeck?.name || '—', sub: records.topDeck ? `${records.topDeck.owner} · ${records.topDeck.winRate}%` : 'min 3 partite' },
-                  { icon: '🎲', label: 'Più presenze', value: records.mostGames?.username || '—', sub: records.mostGames ? `${records.mostGames.games} partite` : '' },
-                  { icon: '🪑', label: 'Tavolo più affollato', value: `${records.biggestTable.players.length} giocatori`, sub: new Date(records.biggestTable.playedAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }) },
-                  { icon: '🛡️', label: 'Re della sopravvivenza', value: records.survivalKing?.username || '—', sub: records.survivalKing ? `piazz. medio ${records.survivalKing.avg.toFixed(1)}° · min 3 partite` : 'serve l\'ordine di uscita' },
-                  { icon: '🪦', label: 'Sfortunato', value: records.unluckiest?.username || '—', sub: records.unluckiest ? `${records.unluckiest.firstOuts}× primo eliminato` : 'serve l\'ordine di uscita' },
-                  { icon: '⚔️', label: 'Più spietato', value: records.mostRuthless?.[0] || '—', sub: records.mostRuthless ? `${records.mostRuthless[1]} eliminazioni` : 'serve il kill tracking' },
-                  { icon: '🎯', label: 'Bersaglio', value: records.biggestTarget?.[0] || '—', sub: records.biggestTarget ? `eliminato ${records.biggestTarget[1]}× in totale` : 'serve il kill tracking' },
+                  { icon: '👑', label: tr('dashboardPage.records.kingOfMonthLabel'), value: records.kingOfMonth?.[0] || '—', sub: records.kingOfMonth ? tr('dashboardPage.records.kingOfMonthSub', { count: records.kingOfMonth[1] }) : tr('dashboardPage.records.kingOfMonthNone') },
+                  { icon: '🔥', label: tr('dashboardPage.records.streakLabel'), value: records.longestStreak ? tr('dashboardPage.records.streakValue', { count: records.longestStreak.best }) : '—', sub: records.longestStreak?.username || '' },
+                  { icon: '🏅', label: tr('dashboardPage.records.mostWinsLabel'), value: records.mostWins?.username || '—', sub: records.mostWins ? tr('dashboardPage.records.mostWinsSub', { count: records.mostWins.wins }) : '' },
+                  { icon: '📈', label: tr('dashboardPage.records.bestRateLabel'), value: records.bestRate ? `${records.bestRate.winRate}%` : '—', sub: records.bestRate ? tr('dashboardPage.records.bestRateSub', { username: records.bestRate.username }) : tr('dashboardPage.records.bestRateFallback') },
+                  { icon: '🎴', label: tr('dashboardPage.records.topDeckLabel'), value: records.topDeck?.name || '—', sub: records.topDeck ? tr('dashboardPage.records.topDeckSub', { owner: records.topDeck.owner, winRate: records.topDeck.winRate }) : tr('dashboardPage.records.topDeckFallback') },
+                  { icon: '🎲', label: tr('dashboardPage.records.mostGamesLabel'), value: records.mostGames?.username || '—', sub: records.mostGames ? tr('gruppoPage.gamesCount', { count: records.mostGames.games }) : '' },
+                  { icon: '🪑', label: tr('dashboardPage.records.biggestTableLabel'), value: tr('gamePage.playersCount', { count: records.biggestTable.players.length }), sub: new Date(records.biggestTable.playedAt).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' }) },
+                  { icon: '🛡️', label: tr('dashboardPage.records.survivalKingLabel'), value: records.survivalKing?.username || '—', sub: records.survivalKing ? tr('dashboardPage.records.survivalKingSub', { avg: records.survivalKing.avg.toFixed(1) }) : tr('dashboardPage.records.noOrderData') },
+                  { icon: '🪦', label: tr('dashboardPage.records.unluckiestLabel'), value: records.unluckiest?.username || '—', sub: records.unluckiest ? tr('dashboardPage.records.unluckiestSub', { count: records.unluckiest.firstOuts }) : tr('dashboardPage.records.noOrderData') },
+                  { icon: '⚔️', label: tr('dashboardPage.records.mostRuthlessLabel'), value: records.mostRuthless?.[0] || '—', sub: records.mostRuthless ? tr('dashboardPage.records.mostRuthlessSub', { count: records.mostRuthless[1] }) : tr('dashboardPage.records.noKillTracking') },
+                  { icon: '🎯', label: tr('dashboardPage.records.biggestTargetLabel'), value: records.biggestTarget?.[0] || '—', sub: records.biggestTarget ? tr('dashboardPage.records.biggestTargetSub', { count: records.biggestTarget[1] }) : tr('dashboardPage.records.noKillTracking') },
                 ].map((r, i) => (
                   <div key={i} style={{ ...card, marginBottom: 0, position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: t.gradient }} />
@@ -994,21 +998,20 @@ export default function DashboardPage() {
 
               {/* Meta colori */}
               <div style={{ ...card }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: t.text, marginBottom: 14 }}>Meta colori · win rate per identità</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: t.text, marginBottom: 14 }}>{tr('dashboardPage.colorMetaTitle')}</div>
                 {colorMeta.every(c => c.games === 0) ? (
-                  <div style={{ fontSize: 13, color: t.textMuted }}>Nessun dato</div>
+                  <div style={{ fontSize: 13, color: t.textMuted }}>{tr('gruppoPage.noData')}</div>
                 ) : colorMeta.map(c => {
                   const COLOR_BG = { W: '#f5f0e0', U: '#b8d4e8', B: '#c8b8d8', R: '#e8c0b0', G: '#b8d8b8' }
-                  const COLOR_LBL = { W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde' }
                   return (
                     <div key={c.color} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
                       <span style={{ width: 22, height: 22, borderRadius: '50%', background: COLOR_BG[c.color], border: '1px solid rgba(0,0,0,0.15)', flexShrink: 0, fontSize: 10, fontWeight: 700, color: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{c.color}</span>
-                      <span style={{ fontSize: 12, color: t.textSub, width: 52, flexShrink: 0 }}>{COLOR_LBL[c.color]}</span>
+                      <span style={{ fontSize: 12, color: t.textSub, width: 52, flexShrink: 0 }}>{tr(`colors.${c.color}`)}</span>
                       <div style={{ flex: 1, height: 8, borderRadius: 4, background: t.bgMuted, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${c.winRate}%`, background: t.primary, borderRadius: 4, transition: 'width 0.4s' }} />
                       </div>
                       <span style={{ fontSize: 13, fontWeight: 600, color: t.text, width: 38, textAlign: 'right', flexShrink: 0 }}>{c.winRate}%</span>
-                      <span style={{ fontSize: 11, color: t.textMuted, width: 60, textAlign: 'right', flexShrink: 0 }}>{c.games} pres.</span>
+                      <span style={{ fontSize: 11, color: t.textMuted, width: 60, textAlign: 'right', flexShrink: 0 }}>{tr('gruppoPage.appearancesCount', { count: c.games })}</span>
                     </div>
                   )
                 })}
@@ -1016,7 +1019,7 @@ export default function DashboardPage() {
 
               {/* Attività per mese */}
               <div style={{ ...card }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: t.text, marginBottom: 16 }}>Attività · partite per mese</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: t.text, marginBottom: 16 }}>{tr('gruppoPage.monthlyActivity')}</div>
                 {(() => {
                   const max = Math.max(1, ...activity.map(m => m.count))
                   return (
