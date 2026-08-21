@@ -1,12 +1,12 @@
 # Privacy Policy
 
-*Last updated: August 18, 2026*
+*Last updated: August 19, 2026*
 
-> **Note for whoever runs CommanderOne**: this document is a technically accurate draft — it describes exactly what the code does, who it shares data with and why — but **it does not replace a legal review**. Before publishing it, fill in the fields in `[square brackets]` (data controller, contact, chosen hosting provider) and have the text checked by someone familiar with GDPR/privacy compliance in your jurisdiction, especially if you expect underage or non-EU users.
+> **Note for whoever runs CommanderOne**: this document is a technically accurate draft — it describes exactly what the code does, who it shares data with and why — but **it does not replace a legal review**. The field in `[square brackets]` about the chosen hosting provider (section 5.5) still needs completing once a provider is chosen; before publishing it, have the text checked by someone familiar with GDPR/privacy compliance in your jurisdiction regardless, especially if you expect underage or non-EU users.
 
 ## 1. Data controller
 
-CommanderOne is developed and operated by **[Controller name/company]**, reachable at **[contact email]**.
+CommanderOne is developed and operated by **Kevin Corseto**, reachable at **ckappa97@gmail.com**.
 
 This notice applies to the CommanderOne web app (the "Service") and describes what data we collect, why, who we share it with, and what rights you have over it.
 
@@ -93,7 +93,7 @@ If you're in the European Economic Area, the United Kingdom, or a jurisdiction w
 - **Objection and restriction**: object to processing based on legitimate interest, or ask for it to be restricted.
 - **Complaint**: file a complaint with your supervisory authority (in Italy, the Garante per la Protezione dei Dati Personali — [www.garanteprivacy.it](https://www.garanteprivacy.it)).
 
-To exercise a right that isn't available to you directly in the app, write to **[contact email]**.
+To exercise a right that isn't available to you directly in the app, write to **ckappa97@gmail.com**.
 
 ### 7.1 If you're the only administrator of a Group
 
@@ -121,4 +121,4 @@ If we make a substantial update to this notice, we'll flag it in the Service bef
 
 ## 13. Contact
 
-For any question about this notice or your data: **[contact email]**.
+For any question about this notice or your data: **ckappa97@gmail.com**.

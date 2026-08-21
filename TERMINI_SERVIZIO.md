@@ -1,8 +1,8 @@
 # Termini di Servizio
 
-*Ultimo aggiornamento: 18 agosto 2026*
+*Ultimo aggiornamento: 19 agosto 2026*
 
-> **Nota per chi gestisce CommanderOne**: come per la Privacy Policy, completa i campi tra `[parentesi quadre]` (titolare, contatto, legge applicabile) e fai verificare il testo da un legale prima della pubblicazione — in particolare le clausole di limitazione di responsabilità, che variano di efficacia da giurisdizione a giurisdizione.
+> **Nota per chi gestisce CommanderOne**: come per la Privacy Policy, fai verificare il testo da un legale prima della pubblicazione — in particolare le clausole di limitazione di responsabilità (sezione 10), che variano di efficacia da giurisdizione a giurisdizione.
 
 Benvenuto su CommanderOne. Usando il Servizio accetti questi Termini di Servizio. Se non li accetti, non usare il Servizio.
 
@@ -70,8 +70,8 @@ Possiamo aggiornare questi Termini nel tempo. Le modifiche sostanziali ti verran
 
 ## 13. Legge applicabile
 
-**[Da completare: legge applicabile e foro competente — tipicamente quelli del Paese/stato di residenza o sede del titolare del Servizio.]**
+Questi Termini sono regolati dalla legge italiana. Per qualunque controversia relativa all'uso del Servizio è competente il Foro di residenza del titolare del Servizio, fatte salve le competenze inderogabili previste dalla legge a tutela del consumatore.
 
 ## 14. Contatti
 
-Per domande su questi Termini: **[email di contatto]**.
+Per domande su questi Termini: **ckappa97@gmail.com**.

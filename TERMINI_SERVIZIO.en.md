@@ -1,8 +1,8 @@
 # Terms of Service
 
-*Last updated: August 18, 2026*
+*Last updated: August 19, 2026*
 
-> **Note for whoever runs CommanderOne**: as with the Privacy Policy, fill in the fields in `[square brackets]` (controller, contact, governing law) and have the text checked by a lawyer before publishing — particularly the liability-limitation clauses, whose enforceability varies by jurisdiction.
+> **Note for whoever runs CommanderOne**: as with the Privacy Policy, have the text checked by a lawyer before publishing — particularly the liability-limitation clauses (section 10), whose enforceability varies by jurisdiction.
 
 Welcome to CommanderOne. By using the Service you agree to these Terms of Service. If you don't agree to them, don't use the Service.
 
@@ -70,8 +70,8 @@ We may update these Terms over time. Substantial changes will be flagged in the 
 
 ## 13. Governing law
 
-**[To be completed: governing law and competent court — typically those of the country/state of residence or registered office of the Service's controller.]**
+These Terms are governed by Italian law. Any dispute relating to the use of the Service falls under the jurisdiction of the courts of the Service controller's place of residence, without prejudice to any mandatory consumer-protection jurisdiction provided by law.
 
 ## 14. Contact
 
-For questions about these Terms: **[contact email]**.
+For questions about these Terms: **ckappa97@gmail.com**.
