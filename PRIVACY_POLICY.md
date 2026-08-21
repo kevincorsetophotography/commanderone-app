@@ -1,12 +1,12 @@
 # Privacy Policy
 
-*Ultimo aggiornamento: 18 agosto 2026*
+*Ultimo aggiornamento: 19 agosto 2026*
 
-> **Nota per chi gestisce CommanderOne**: questo documento è una bozza tecnicamente accurata — descrive esattamente cosa fa il codice, con chi condivide dati e perché — ma **non sostituisce una revisione legale**. Prima di pubblicarla, completa i campi tra `[parentesi quadre]` (titolare del trattamento, contatto, eventuale hosting scelto) e fai verificare il testo da chi si occupa di conformità GDPR/privacy nella tua giurisdizione, soprattutto se prevedi utenti minorenni o extra-UE.
+> **Nota per chi gestisce CommanderOne**: questo documento è una bozza tecnicamente accurata — descrive esattamente cosa fa il codice, con chi condivide dati e perché — ma **non sostituisce una revisione legale**. Resta da completare il campo tra `[parentesi quadre]` sull'hosting scelto (sezione 5.5) non appena si sceglie un provider; prima di pubblicarla fai comunque verificare il testo da chi si occupa di conformità GDPR/privacy nella tua giurisdizione, soprattutto se prevedi utenti minorenni o extra-UE.
 
 ## 1. Titolare del trattamento
 
-CommanderOne è sviluppato e gestito da **[Nome/Ragione sociale del titolare]**, contattabile all'indirizzo email **[email di contatto]**.
+CommanderOne è sviluppato e gestito da **Kevin Corseto**, contattabile all'indirizzo email **ckappa97@gmail.com**.
 
 Questa informativa si applica all'app web CommanderOne (il "Servizio") e descrive quali dati raccogliamo, perché, con chi li condividiamo e quali diritti hai su di essi.
 
@@ -93,7 +93,7 @@ Se ti trovi nello Spazio Economico Europeo, nel Regno Unito o in una giurisdizio
 - **Opposizione e limitazione**: opporti a un trattamento basato su interesse legittimo o chiederne la limitazione.
 - **Reclamo**: presentare reclamo alla tua autorità di controllo (in Italia, il Garante per la Protezione dei Dati Personali — [www.garanteprivacy.it](https://www.garanteprivacy.it)).
 
-Per esercitare un diritto non disponibile in autonomia nell'app, scrivi a **[email di contatto]**.
+Per esercitare un diritto non disponibile in autonomia nell'app, scrivi a **ckappa97@gmail.com**.
 
 ### 7.1 Se sei l'unico amministratore di un Gruppo
 
@@ -121,4 +121,4 @@ Se aggiorniamo questa informativa in modo sostanziale, te lo segnaleremo nel Ser
 
 ## 13. Contatti
 
-Per qualunque domanda su questa informativa o sui tuoi dati: **[email di contatto]**.
+Per qualunque domanda su questa informativa o sui tuoi dati: **ckappa97@gmail.com**.
